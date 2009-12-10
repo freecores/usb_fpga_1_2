@@ -18,11 +18,17 @@
 
 package ztex;
 
+/** *Thrown while attempting to overwrite an existing firmware with an incompatible one.*/
 public class IncompatibleFirmwareException extends Exception {
+/** 
+ * Constructs an instance from the given error message.
+ * @param msg The error message.
+ */
     public IncompatibleFirmwareException (String msg) {
 	super( "Incompatible firmware: "+msg );
     }
 
+/** * Constructs an instance using a standard message. */
     public IncompatibleFirmwareException () {
 	super( "Incompatible firmware" );
     }

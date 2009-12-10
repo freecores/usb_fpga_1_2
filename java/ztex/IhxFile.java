@@ -24,8 +24,15 @@ package ztex;
 import java.io.*;
 import java.util.*;
 import java.net.*;
-
+/**
+  * A class representing a firmware image loaded from an ihx (Intel Hex format) file.
+  */
 public class IhxFile {
+
+/**
+  * This array stores the firmware image.
+  * Values &lt;0 and &gt;255 mean that the data is undefined.
+  */
     public short ihxData[] = new short[65536];
     
 // ******* readHexDigit ********************************************************
@@ -48,6 +55,13 @@ public class IhxFile {
     }
     
 // ******* IhxFile *************************************************************
+/**
+  * Constructs an instance from a given file name.
+  * This method can also read system resources, e.g. files from the current jar archive.
+  * @param fileName The file name.
+  * @throws IOException If an read error occurred.
+  * @throws IhxFileDamagedException If the ihx file is damaged.
+  */
     public IhxFile ( String fileName ) throws IOException, IhxFileDamagedException {
 	InputStream in = JInputStream.getInputStream( fileName );
 	int b, len, cs, addr;
@@ -118,7 +132,11 @@ public class IhxFile {
     }
 
 // ******* dataInfo ************************************************************
-    public void dataInfo( PrintStream out ) {
+ /**
+  * Print out some information about the memory usage.
+  * @param out Where the data is printed out.
+  */
+   public void dataInfo( PrintStream out ) {
 	int addr=-1;
 	for ( int i=0; i<=65536; i++ ) {	// data
 	    if ( (i==65536 || ihxData[i]<0) && addr>=0 ) {

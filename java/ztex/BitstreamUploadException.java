@@ -17,12 +17,17 @@
 !*/
 
 package ztex;
-
+/** * 	Signals that an error occurred while attempting to upload the bitstream. */
 public class BitstreamUploadException extends Exception {
-    public BitstreamUploadException (String msg) {
+/** 
+ * Constructs an instance from the given error message.
+ * @param msg The error message.
+ */
+        public BitstreamUploadException (String msg) {
 	super( "Error uploading bitstream: "+msg );
     }
 
+/** * Constructs an instance using a standard message. */
     public BitstreamUploadException () {
 	super( "Error uploading bitstream" );
     }

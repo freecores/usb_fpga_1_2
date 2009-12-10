@@ -16,9 +16,6 @@
    along with this program; if not, see http://www.gnu.org/licenses/.
 !*/
 
-/* 
-    Upload firmware to Cypress EZ-USB device
-*/
 package ztex;
 
 import java.io.*;
@@ -26,8 +23,17 @@ import java.util.*;
 
 import ch.ntb.usb.*;
 
+/** 
+  * Provides methods for uploading firmware to Cypress EZ-USB devices.
+  */
 public class EzUsb {
 // ******* reset **************************************************************
+/** 
+  * Controls the reset state of a Cypress EZ-USB device.
+  * @param handle The handle of the device.
+  * @param r The reset state (true means reset).
+  * @throws FirmwareUploadException if an error occurred while attempting to control the reset state.
+  */
     public static void reset ( int handle, boolean r ) throws FirmwareUploadException {
 	byte buffer[] = { (byte) (r ? 1 : 0) };
 	int k = LibusbJava.usb_control_msg(handle, 0x40, 0xA0, 0xE600, 0, buffer, 1, 1000);   // upload j bytes
@@ -36,21 +42,27 @@ public class EzUsb {
 	else if ( k!=1 ) 
 	    throw new FirmwareUploadException( "Unable to set reset="+buffer[0] );
 	try {
-    	    Thread.sleep( 50 );
+    	    Thread.sleep( r ? 50 : 400 );	// give the firmware some time for initialization
 	}
 	    catch ( InterruptedException e ) {
 	}
     }
      
 // ******* uploadFirmware ******************************************************
-//  returns upload time in ms
+/** 
+  * Uploads the Firmware to a Cypress EZ-USB device.
+  * @param handle The handle of the device.
+  * @param ihxFile The firmware image.
+  * @return The upload time in ms.
+  * @throws FirmwareUploadException if an error occurred while attempting to upload the firmware.
+  */
     public static long uploadFirmware (int handle, IhxFile ihxFile ) throws FirmwareUploadException {
 	final int transactionBytes = 256;
 	byte[] buffer = new byte[transactionBytes];
-	long t0 = new Date().getTime();
 
 	reset( handle, true );  // reset = 1
 	
+	long t0 = new Date().getTime();
 	int j = 0;
 	for ( int i=0; i<=ihxFile.ihxData.length; i++ ) {
 	    if ( i >= ihxFile.ihxData.length || ihxFile.ihxData[i] < 0 || j >=transactionBytes ) {
@@ -74,13 +86,14 @@ public class EzUsb {
 		j+=1;
 	    }
 	}
+	long t1 = new Date().getTime();
 
 	try {
 	    EzUsb.reset(handle,false);		// error (may caused re-numeration) can be ignored
 	}
 	catch ( FirmwareUploadException e ) {
 	}
-	return new Date().getTime() - t0;
+	return t1 - t0;
     }
 }    
 

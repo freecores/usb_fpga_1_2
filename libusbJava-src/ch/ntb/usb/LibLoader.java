@@ -11,7 +11,7 @@ package ch.ntb.usb;
 import java.io.*;
 
 /**
- * This class allows to load libraries in the normal way or as a system resource.
+ * This class allows to load libraries in the normal way or as a system resource (e.g. form the current .jar file).
  * See below for a further description. <br>
  * 
  * @author Stefan Ziegenbalg
@@ -21,11 +21,11 @@ public class LibLoader {
 
 /**
  * Loads a library. This is done in three steps.<br>
- * 1. The library is tried to be load from the path list specified by the java.library.path proterty. <br>
- * 2. The library is tried to be load from the currrent directory. <br>
- * 3. The library is searched as a system ressource (e.g. in the current .jar file), 
- * copied to te temporary directory and loaded from there. Afterwards the temporary library is deleted.
- * The copying is necessary because libraries cant be loeaded directly from .jar files.<br>
+ * 1. The library is tried to be load from the path list specified by the java.library.path property. <br>
+ * 2. The library is tried to be load from the current directory. <br>
+ * 3. The library is searched as a system resource (e.g. in the current .jar file), 
+ * copied to to temporary directory and loaded from there. Afterwards the temporary library is deleted.
+ * The copying is necessary because libraries can't be loaded directly from .jar files.<br>
  * 
  * @param libName Library name (e.g. usbJava)
  *

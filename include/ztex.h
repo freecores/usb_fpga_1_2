@@ -17,7 +17,7 @@
 !*/
 
 /* 
-   Puts everything in the right order together.
+   Puts everything together.
 */
 
 #ifndef[ZTEX_H]
@@ -30,25 +30,53 @@
 
 
 /* *********************************************************************
-   ***** Flash memory support ******************************************
-   ********************************************************************* */
-#ifeq[FLASH_ENABLED][1]
-#ifeq[PRODUCT_IS][UFM-1_1]
-#include[ztex-flash1.h]
-#elifeq[PRODUCT_IS][UFM-1_2]
-#include[ztex-flash1.h]
-#else
-#warning[FLASH option is not supported by this product]
-#define[FLASH_ENABLED][0]
-#endif
-#endif
-
-
-/* *********************************************************************
    ***** EEPROM support and some I2c helper functions ******************
    ********************************************************************* */
 #ifneq[EEPROM_DISABLED][1]
 #include[ztex-eeprom.h]
+#endif
+
+/* *********************************************************************
+   ***** Flash memory support ******************************************
+   ********************************************************************* */
+#ifeq[FLASH_ENABLED][1]
+
+#ifeq[PRODUCT_IS][UFM-1_1]
+#define[MMC_PORT][E]
+#define[MMC_BIT_CS][7]
+#define[MMC_BIT_DI][6]
+#define[MMC_BIT_DO][4]
+#define[MMC_BIT_CLK][5]
+#include[ztex-flash1.h]
+
+#elifeq[PRODUCT_IS][UFM-1_2]
+#define[MMC_PORT][E]
+#define[MMC_BIT_CS][7]
+#define[MMC_BIT_DI][6]
+#define[MMC_BIT_DO][4]
+#define[MMC_BIT_CLK][5]
+#include[ztex-flash1.h]
+
+#elifeq[PRODUCT_IS][UM-1_0]
+#define[MMC_PORT][C]
+#define[MMC_BIT_CS][7]
+#define[MMC_BIT_DI][6]
+#define[MMC_BIT_DO][4]
+#define[MMC_BIT_CLK][5]
+#include[ztex-flash1.h]
+
+#elifeq[PRODUCT_IS][UM-1_10]
+#define[MMC_PORT][C]
+#define[MMC_BIT_CS][4]
+#define[MMC_BIT_DI][5]
+#define[MMC_BIT_DO][7]
+#define[MMC_BIT_CLK][6]
+#include[ztex-flash1.h]
+
+#else
+#warning[FLASH option is not supported by this product]
+#define[FLASH_ENABLED][0]
+#endif
 #endif
 
 /* *********************************************************************
@@ -113,14 +141,24 @@
 
 void init_USB ()
 {
-
+    USBCS |= 0x08;
+    
     CPUCS = bmBIT4 | bmBIT1;
     CKCON &= ~7;
     
+#ifeq[PRODUCT_IS][UFM-1_0]
     IOA1 = 1;		
     OEA |= bmBIT1;
+#elifeq[PRODUCT_IS][UFM-1_1]
+    IOA1 = 1;		
+    OEA |= bmBIT1;
+#elifeq[PRODUCT_IS][UFM-1_2]
+    IOA1 = 1;		
+    OEA |= bmBIT1;
+#endif
     
     EA = 0;
+    EUSB = 0;
 
     ENABLE_AVUSB;
     
@@ -150,18 +188,24 @@ void init_USB ()
     EUSB = 1;
     EA = 1;
 
-    USBCS |= 0x08;
-    USBCS |= bmBIT7 | bmBIT1;
-    wait(500);
-    USBCS &= ~0x08;
-    wait(500);  
-    
     EP1XCFG(1IN);
     EP1XCFG(1OUT);
     EPXCFG(2);
     EPXCFG(4);
     EPXCFG(6);
     EPXCFG(8);
+    
+#ifeq[FLASH_ENABLED][1]
+    flash_init();
+#endif
+#ifeq[FLASH_BITSTREAM_ENABLED][1]
+    fpga_configure_from_flash_init();
+#endif
+
+    USBCS |= bmBIT7 | bmBIT1;
+    wait(250);
+    USBCS &= ~0x08;
 }
+
 
 #endif   /* ZTEX_H */

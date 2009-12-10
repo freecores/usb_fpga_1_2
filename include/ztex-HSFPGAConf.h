@@ -19,8 +19,8 @@
 #ifndef[ZTEX_HS_FPGA_CONF1_H]
 #define[ZTEX_HS_FPGA_CONF1_H]
 
-ADD_EP0_VENDOR_COMMAND((0x33,,initHSFPGAConfiguration();,,));;
-ADD_EP0_VENDOR_COMMAND((0x34,,finishHSFPGAConfiguration();,,));;
+ADD_EP0_VENDOR_COMMAND((0x33,,init_hs_fpga_configuration();,,));;
+ADD_EP0_VENDOR_COMMAND((0x34,,finish_hs_fpga_configuration();,,));;
 
 #ifndef[HS_FPGA_CONF_EP]
 #error[Macro `HS_FPGA_CONF_EP' is not defined]
@@ -34,18 +34,18 @@ ADD_EP0_VENDOR_COMMAND((0x34,,finishHSFPGAConfiguration();,,));;
 #endif
 
 
-static void initHSFPGAConfiguration();
-static void finishHSFPGAConfiguration();
+static void init_hs_fpga_configuration();
+static void finish_hs_fpga_configuration();
 
 #elifndef[ZTEX_HS_FPGA_CONF2_H]  /*ZTEX_HS_FPGA_CONF1_H*/
 #define[ZTEX_HS_FPGA_CONF2_H]
 
-static void finishHSFPGAConfiguration() {
+static void finish_hs_fpga_configuration() {
     GPIFABORT = 0xFF;
     SYNCDELAY;
     IFCONFIG = bmBIT7 | bmBIT6;
     SYNCDELAY;
-    finishFPGAConfiguration();
+    finish_fpga_configuration();
 }
 
 // FIFO write wave form
@@ -58,8 +58,8 @@ const char xdata GPIF_WAVE_DATA_HSFPGA[32] =
 };                     
                        
 
-static void initHSFPGAConfiguration() {
-    initFPGAConfiguration();
+static void init_hs_fpga_configuration() {
+    init_fpga_configuration();
 
     EPHS_FPGA_CONF_EPCS &= ~bmBIT0;		// clear stall bit
 

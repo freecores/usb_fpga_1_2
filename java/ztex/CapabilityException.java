@@ -18,7 +18,13 @@
 
 package ztex;
 
+/** * Thrown is a required capability is not available. */
 public class CapabilityException extends Exception {
+/** 
+ * Constructs an instance from a givig device and capability string.
+ * @param ztex The device.
+ * @param cap Capability name.
+ */
     public CapabilityException ( Ztex1 ztex, String cap) {
 	super( "bus=" + ztex.dev().dev().getBus().getDirname() + "  device=" + ztex.dev().dev().getFilename() + ": " + cap + " not supported" );
     }

@@ -17,12 +17,17 @@
 !*/
 
 package ztex;
-
+/** * Signals that an error occured while attempting to upload the firmware. */ 
 public class FirmwareUploadException extends Exception {
+/** 
+ * Constructs an instance from the given error message.
+ * @param msg The error message.
+ */
     public FirmwareUploadException (String msg) {
 	super( "Error uploading firmware: "+msg );
     }
 
+/** * Constructs an instance using a standard message. */
     public FirmwareUploadException () {
 	super( "Error uploading firmware" );
     }

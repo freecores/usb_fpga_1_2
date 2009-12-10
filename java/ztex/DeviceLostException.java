@@ -18,11 +18,17 @@
 
 package ztex;
 
+/** * Thrown if a device went lost after renumeration. */
 public class DeviceLostException extends Exception {
+/** 
+ * Constructs an instance from the given input string.
+ * @param msg A message.
+ */
     public DeviceLostException (String msg) {
 	super( msg );
     }
 
+/** * Constructs an instance using a standard message. */
     public DeviceLostException () {
 	super( "Device lost");
     }

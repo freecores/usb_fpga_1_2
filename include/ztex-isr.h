@@ -23,7 +23,8 @@
 #ifndef[ZTEX_ISR_H]
 #define[ZTEX_ISR_H]
 
-xdata BYTE prevSetupRequest = 0xff;
+xdata BYTE ep0_prev_setup_request = 0xff;
+xdata BYTE ep0_vendor_cmd_setup = 0;
 
 xdata WORD ISOFRAME_COUNTER[4] = {0, 0, 0, 0}; 	// counters for iso frames automatically reset by sync frame request
 
@@ -86,6 +87,25 @@ static void sendStringDescriptor (BYTE loAddr, BYTE hiAddr, BYTE size)
     EP0BCL = i;
 }
 
+/* *********************************************************************
+   ***** ep0_payload_update ********************************************
+   ********************************************************************* */
+static void ep0_payload_update() {
+    ep0_payload_transfer = ( ep0_payload_remaining > 64 ) ? 64 : ep0_payload_remaining;
+    ep0_payload_remaining -= ep0_payload_transfer;
+}
+
+
+/* *********************************************************************
+   ***** ep0_vendor_cmd_su **********************************************
+   ********************************************************************* */
+static void ep0_vendor_cmd_su() {
+    switch ( ep0_prev_setup_request ) {
+	EP0_VENDOR_COMMANDS_SU;
+	default:
+    	    EP0CS |= 0x01;			// set stall, unknown request
+    }
+}
 
 /* *********************************************************************
    ***** SUDAV_ISR *****************************************************
@@ -93,8 +113,9 @@ static void sendStringDescriptor (BYTE loAddr, BYTE hiAddr, BYTE size)
 static void SUDAV_ISR () interrupt
 {
     BYTE a;
-    prevSetupRequest = bRequest;
+    ep0_prev_setup_request = bRequest;
     SUDPTRCTL = 1;
+    
     // standard USB requests
     switch ( bRequest ) {
 	case 0x00:	// get status 
@@ -261,6 +282,9 @@ static void SUDAV_ISR () interrupt
     // vendor request and commands
     switch ( bmRequestType ) {
 	case 0xc0: 					// vendor request 
+	    ep0_payload_remaining = (SETUPDAT[7] << 8) | SETUPDAT[6];
+	    ep0_payload_update();
+	    
 	    switch ( bRequest ) {
 		case 0x22: 				// get ZTEX descriptor
 		    SUDPTRCTL = 0;
@@ -275,17 +299,24 @@ static void SUDAV_ISR () interrupt
 	    }
 	    break;
 	case 0x40: 					// vendor command
-	    switch ( bRequest ) {
-		EP0_VENDOR_COMMANDS_SU;
-		default:
-		    EP0CS |= 0x01;			// set stall, unknown request
+	    /* vendor commands may overlap if they are send without pause. To avoid
+	       synchronization problems the setup sequences are executed in EP0OUT_ISR, i.e.
+	       after the first packet of payload date received. */
+	    if ( SETUPDAT[7]!=0 || SETUPDAT[6]!=0 ) {
+		ep0_vendor_cmd_setup = 1;
+		EP0BCL = 0;
+		EXIF &= ~bmBIT4;			// clear main USB interrupt flag
+		USBIRQ = bmBIT0;			// clear SUADV IRQ
+		return;					// don't clear HSNAK bit. This is done after the command has completed
 	    }
+	    ep0_vendor_cmd_su();			// setup sequences of vendor command with no payload ara executed immediately
+	    EP0BCL = 0;
 	    break;
     }
 
-    EP0CS |= 0x80;
-    EXIF &= ~bmBIT4;
-    USBIRQ = bmBIT0;
+    EXIF &= ~bmBIT4;					// clear main USB interrupt flag
+    USBIRQ = bmBIT0;					// clear SUADV IRQ
+    EP0CS |= 0x80;					// clear the HSNAK bit
 }
 
 /* *********************************************************************
@@ -334,12 +365,12 @@ void HSGRANT_ISR() interrupt
 }        
 
 /* *********************************************************************
-   ***** AP0ACK_ISR **************************************************** 
+   ***** EP0ACK_ISR **************************************************** 
    ********************************************************************* */
 void EP0ACK_ISR() interrupt
 {
-        EXIF &= ~bmBIT4;
-	USBIRQ = bmBIT6;
+        EXIF &= ~bmBIT4;	// clear USB interrupt flag
+	USBIRQ = bmBIT6;	// clear EP0ACK IRQ
 }
 
 /* *********************************************************************
@@ -347,15 +378,17 @@ void EP0ACK_ISR() interrupt
    ********************************************************************* */
 static void EP0IN_ISR () interrupt
 {
-    switch ( prevSetupRequest ) {
+    EUSB = 0;			// block all USB interrupts
+    ep0_payload_update();
+    switch ( ep0_prev_setup_request ) {
 	EP0_VENDOR_REQUESTS_DAT;
 	default:
 	    EP0BCH = 0;
 	    EP0BCL = 0;
     }
-    EP0CS |= 0x80;
-    EXIF &= ~bmBIT4;
-    EPIRQ = bmBIT0;
+    EXIF &= ~bmBIT4;		// clear USB interrupt flag
+    EPIRQ = bmBIT0;		// clear EP0IN IRQ
+    EUSB = 1;
 }
 
 /* *********************************************************************
@@ -363,14 +396,27 @@ static void EP0IN_ISR () interrupt
    ********************************************************************* */
 static void EP0OUT_ISR () interrupt
 {
-    switch ( prevSetupRequest ) {
-	EP0_VENDOR_COMMANDS_DAT;
+    EUSB = 0;			// block all USB interrupts
+    if ( ep0_vendor_cmd_setup ) {
+	ep0_vendor_cmd_setup = 0;
+	ep0_payload_remaining = (SETUPDAT[7] << 8) | SETUPDAT[6];
+	ep0_vendor_cmd_su();
     }
+    
+    ep0_payload_update();
+    
+    switch ( ep0_prev_setup_request ) {
+	EP0_VENDOR_COMMANDS_DAT;
+    } 
 
-    EP0BCL = 1;
+    EP0BCL = 0;
 
-    EXIF &= ~bmBIT4;
-    EPIRQ = bmBIT1;
+    EXIF &= ~bmBIT4;		// clear main USB interrupt flag
+    EPIRQ = bmBIT1;		// clear EP0OUT IRQ
+    if ( ep0_payload_remaining == 0 ) {
+	EP0CS |= 0x80; 		// clear the HSNAK bit
+    }
+    EUSB = 1;
 }
 
 

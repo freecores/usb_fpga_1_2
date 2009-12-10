@@ -33,7 +33,7 @@ class ParameterException extends Exception {
 		"    -d <number>       Device Number (default: 0)\n" +
 		"    -f 	       Force uploads\n" +
 		"    -p                Print bus info\n" +
-		"    -w                Enable certain workarounds which may be required for vmware + windows\n"+
+		"    -w                Enable certain workarounds\n"+
 		"    -h                This help" );
     
     public ParameterException (String msg) {
@@ -48,7 +48,7 @@ class UCEcho extends Ztex1v1 {
 
 // ******* UCEcho **************************************************************
 // constructor
-    public UCEcho ( ZtexDevice1 pDev ) throws UsbException, ZtexDescriptorException {
+    public UCEcho ( ZtexDevice1 pDev ) throws UsbException {
 	super ( pDev );
     }
 
@@ -71,7 +71,7 @@ class UCEcho extends Ztex1v1 {
 // writes a string to Endpoint 4, reads it back from Endpoint 2 and writes the output to System.out
     public void echo ( String input ) throws UsbException {
 	byte buf[] = input.getBytes(); 
-	int i = LibusbJava.usb_bulk_write(handle, 0x04, buf, buf.length, 1000);
+	int i = LibusbJava.usb_bulk_write(handle(), 0x04, buf, buf.length, 1000);
 	if ( i<0 )
 	    throw new UsbException("Error sending data: " + LibusbJava.usb_strerror());
 	System.out.println("Send "+i+" bytes: `"+input+"'" );
@@ -83,7 +83,7 @@ class UCEcho extends Ztex1v1 {
 	}
 
 	buf = new byte[1024];
-	i = LibusbJava.usb_bulk_read(handle, 0x82, buf, 1024, 1000);
+	i = LibusbJava.usb_bulk_read(handle(), 0x82, buf, 1024, 1000);
 	if ( i<0 )
 	    throw new UsbException("Error receiving data: " + LibusbJava.usb_strerror());
 	System.out.println("Read "+i+" bytes: `"+new String(buf,0,i)+"'" );  

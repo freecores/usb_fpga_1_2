@@ -17,8 +17,14 @@
 !*/
 
 package ztex;
-
+/** * Signals that an ihx file is corrupt. */ 
 public class IhxFileDamagedException extends Exception {
+/** 
+  * Constructs an instance from a given file name, line number and error message.
+  * @param filename The file name.
+  * @param line The line number.
+  * @param msg An error message.
+  */
     public IhxFileDamagedException ( String filename, int line, String msg ) {
 	super( "ihx file " + filename + "(" + line + ") damaged: "+msg );
     }

@@ -1,0 +1,4 @@
+Please go to the directory ../../usb-1.0/flashdemo and replace
+"IDENTITY_UM_1_0(10.20.0.0,0);" by "IDENTITY_UFM_1_2(10.11.0.0,0);"
+
+

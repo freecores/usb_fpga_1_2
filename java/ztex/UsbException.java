@@ -19,12 +19,21 @@
 package ztex;
 
 import ch.ntb.usb.*;
-
+/** * Signals an USB error. */
 public class UsbException extends Exception {
-    public UsbException(String msg) {
+/** 
+ * Constructs an instance from the given error message.
+ * @param msg The error message.
+ */
+   public UsbException(String msg) {
 	super( msg );
     }
 
+/** 
+ * Constructs an instance from the given device and error message.
+ * @param dev The device.
+ * @param msg The error message.
+ */
     public UsbException(Usb_Device dev,  String msg) {
 	super( "bus=" + dev.getBus().getDirname() + "  device=" + dev.getFilename() + ": " + msg );
     }

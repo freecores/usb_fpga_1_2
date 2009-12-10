@@ -19,12 +19,17 @@
 package ztex;
 
 import java.io.*;
-
+/** * 	Signals that an error occurred while attempting to read a bitstream. */
 public class BitstreamReadException extends IOException {
+/** 
+ * Constructs an instance from the given error message.
+ * @param msg The error message.
+ */
     public BitstreamReadException(String msg) {
 	super( "Cannot read bitstream: "+msg );
     }
 
+/** * Constructs an instance using a standard message. */
     public BitstreamReadException() {
 	super( "Cannot read bitstream" );
     }

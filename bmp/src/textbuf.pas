@@ -28,12 +28,12 @@ type  pdword = ^dword;
 
       CTextBuf = class;
       CTextBuf = class
-        buf         : pchar;    { character buffer }
-	li          : pdword;   { line info lineNum shl 12 + file }
-        lastbuf,d   : longint;
-	allocsize   : longint;  { allocated size }
-        last        : CTextBuf;
-        killme      : boolean;
+        buf          : pchar;    { character buffer }
+	li           : pdword;   { line info lineNum shl 12 + file }
+        lastbuf,d,d0 : longint;
+	allocsize    : longint;  { allocated size }
+        last         : CTextBuf;
+        killme       : boolean;
         constructor create(var tb:CTextBuf);
         constructor create(var tb:CTextBuf; asize:longint);
         constructor create(var tb:CTextBuf; cb:pchar; lib:pdword; bufsize:longint);
@@ -72,7 +72,7 @@ const textbuf_size = 2048;
 constructor CTextBuf.create(var tb:CTextBuf);
 begin
 lastbuf:=-1;
-d:=0;
+d:=0; d0:=0;
 killme:=false;
 last:=tb;
 tb:=self;
@@ -138,6 +138,7 @@ var i,j  : longint;
     b    : boolean;
 begin
 lastbuf:=-1;
+d0+=d;
 d:=0;
 killme:=true;
 

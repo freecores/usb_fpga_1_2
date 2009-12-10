@@ -48,6 +48,8 @@ xdata at ZTEX_DESCRIPTOR_OFFS+2 BYTE ZTEXID[4];
    0.0.0.0		// default Product ID (no product specified)
    1.*.*.*   		// may be used for experimental purposes
    10.*.*.*		// used for ZTEX products
+   10.11.*.*		// ZTEX USB-FPGA-Module 1.2
+   10.20.*.*		// ZTEX USB-Module 1.0
    
    Please contact me (http://www.ztex.de --> Impressum/Kontakt) if you want to register/reserve a Product ID (range).
 */
@@ -63,6 +65,7 @@ xdata at ZTEX_DESCRIPTOR_OFFS+11 BYTE INTERFACE_VERSION;
     Standard interface capabilities:
 	0.0  : EEPROM read/write, see ztex-eeprom.h
 	0.1  : FPGA configuration, see ztex-fpga.h
+	0.2  : Flash memeory suport, see ztex-flash1.h
 */
 xdata at ZTEX_DESCRIPTOR_OFFS+12 BYTE INTERFACE_CAPABILITIES[6];
 
@@ -143,6 +146,10 @@ void abscode_identity() _naked
 #ifdef[@CAPABILITY_FPGA;]
 #nolf
  + 2
+#endif
+#ifdef[@CAPABILITY_FLASH;]
+#nolf
+ + 4
 #endif
     .db 0
     .db 0

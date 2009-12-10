@@ -30,9 +30,9 @@
    ***** global variables **********************************************
    ********************************************************************* */
 xdata WORD eeprom_addr;
-xdata WORD eeprom_length;
 xdata WORD eeprom_write_bytes;
 xdata BYTE eeprom_write_checksum;
+
 
 /* *********************************************************************
    ***** i2c_waitWrite *************************************************
@@ -202,16 +202,14 @@ eeprom_write_end:
    ********************************************************************* */
 BYTE eeprom_read_ep0 () { 
     BYTE i, b;
-    b = ( eeprom_length > 64 ) ? 64 : eeprom_length;
+    b = ep0_payload_transfer;
     i = eeprom_read(EP0BUF, eeprom_addr, b);
     eeprom_addr += b;
-    eeprom_length -= b;
     return i;
 }
 
 ADD_EP0_VENDOR_REQUEST((0x38,, 				// read from EEPROM
     eeprom_addr =  (SETUPDAT[3] << 8) | SETUPDAT[2];	// Address
-    eeprom_length =  (SETUPDAT[7] << 8) | SETUPDAT[6];	// size
     EP0BCH = 0;
     EP0BCL = eeprom_read_ep0(); 
 ,,
@@ -232,7 +230,6 @@ ADD_EP0_VENDOR_COMMAND((0x39,,				// write to EEPROM
     eeprom_write_checksum = 0;
     eeprom_write_bytes = 0;
     eeprom_addr =  ( SETUPDAT[3] << 8) | SETUPDAT[2];	// Address
-    EP0BCL = 1;
 ,,
     eeprom_write_ep0(EP0BCL);
     ));; 

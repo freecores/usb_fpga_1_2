@@ -18,11 +18,17 @@
 
 package ztex;
 
+/** * Thrown if the FPGA is already configured. */
 public class AlreadyConfiguredException extends Exception {
+/** 
+ * Constructs an instance from the given input string.
+ * @param msg A message.
+ */
     public AlreadyConfiguredException (String msg) {
 	super( "FPGA already configured: "+msg );
     }
 
+/** * Constructs an instance using a standard message. */
     public AlreadyConfiguredException() {
 	super( "FPGA already configured" );
     }

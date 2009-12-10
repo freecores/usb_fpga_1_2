@@ -46,11 +46,31 @@ typedef unsigned char BYTE;
 typedef unsigned short WORD;
 typedef unsigned long DWORD;
 
-/* *********************************************************************
-   ***** include the basic functions ***********************************
-   ********************************************************************* */
 #include[ezregs.h]
 #include[ezintavecs.h]
+/* *********************************************************************
+   ***** global variables **********************************************
+   ********************************************************************* */
+/* 
+    The following two variables are used to control HSNAK bit.
+    
+    ep0_payload_remaining is set to the length field of of the Setup Data
+    structure (in SUDAV_ISR). At the begin of each payload data transfer (in 
+    SUDAV_ISR, EP0IN_ISR and EP0OUT_ISR) the amount of payload of the current
+    transfer s calculated (<=64 bytes) and subtracted from 
+    ep0_payload_remaining. For Vendor Commands HSNAK bit is cleared
+    automatically (at the end of EP0OUT_ISR) ifep0_payload_remaining == 0.
+    For Vendor Requests HSNAK bit is always cleared at the end of SUDAV_ISR.
+*/
+
+xdata WORD ep0_payload_remaining = 0;		// remaining amount of ep0 payload data (excluding the data of the current transfer)
+xdata BYTE ep0_payload_transfer = 0;		// transfer
+
+/* *********************************************************************
+   *********************************************************************
+   ***** basic functions ***********************************************
+   ********************************************************************* 
+   ********************************************************************* */
 
 /* *********************************************************************
    ***** wait **********************************************************
@@ -68,7 +88,7 @@ void wait(WORD short ms) {	  // wait in ms
 void uwait(WORD short us) {	  // wait in 10µs steps
     WORD i,j;
     for (j=0; j<us; j++) 
-	for (i=0; i<120; i++);
+	for (i=0; i<10; i++);
 }
 
 
@@ -98,12 +118,14 @@ void MEM_COPY1_int() __naked {
 
 #define[MEM_COPY1(][,$1,$2);][{
         _asm
+		push	ar2
 		mov	_AUTOPTRL1,#(_$0)
 		mov	_AUTOPTRH1,#((_$0) >> 8)
 		mov	_AUTOPTRL2,#(_$1)
 		mov	_AUTOPTRH2,#((_$1) >> 8)
   		mov	r2,#($2);
-		lcall _MEM_COPY1_int
+		lcall 	_MEM_COPY1_int
+		pop	ar2
         _endasm; 
 }]
 

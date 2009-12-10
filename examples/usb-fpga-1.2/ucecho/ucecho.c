@@ -26,8 +26,8 @@ SET_VPID(0x4b4,0x8613);
 EP_CONFIG(2,0,BULK,IN,512,2);	 
 EP_CONFIG(4,0,BULK,OUT,512,2);	 
 
-// identify as ZTEX USB FPGA Module 1.2  (Important for FPGA configuration)
-IDENTITY_UFM_1_2(1.0.0.0,0);	 
+// select ZTEX USB FPGA Module 1.2 as target  (Important for FPGA configuration)
+IDENTITY_UFM_1_2(10.11.0.0,0);	 
 
 // give them a nice name
 #define[PRODUCT_STRING]["ucecho for USB FPGA MODULE 1.2"]

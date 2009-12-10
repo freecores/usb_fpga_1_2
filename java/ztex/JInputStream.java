@@ -16,17 +16,21 @@
    along with this program; if not, see http://www.gnu.org/licenses/.
 !*/
 
-/* 
-    creates an input stream from a file as system resource (i.e. from the current .jar file)
-*/
 package ztex;
 
 import java.io.*;
 import java.util.*;
 import java.net.*;
 
+/** * Creates an input stream from a regular file or a system resource file (i.e. a file from the current jar file). */
 public class JInputStream {
 
+/** 
+  * Constructs an instance from a giving file name.
+  * @param fileName The file name.
+  * @throws SecurityException Signals a security violation.
+  * @throws FileNotFoundException Thrown if the file was not found.
+  */
     static public InputStream getInputStream ( String fileName ) throws SecurityException, FileNotFoundException {
 	InputStream is = null;
 	try {

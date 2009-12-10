@@ -41,7 +41,7 @@ class FWLoader {
 			"    -d <number>      Device Number (default: 0)\n"+
 			"    -f               Force uploads\n"+
 			"    -p               Print bus info\n"+
-			"    -w                Enable certain workaraounds which may be required for vmware + windows\n"+
+			"    -w               Enable certain workaraounds\n"+
 			"    -h               This help \n\n"+
 			"Ordered parameters:\n"+
 			"    -i               Info\n"+
@@ -51,7 +51,9 @@ class FWLoader {
 			"    -rf              Reset FPGA\n"+
 			"    -uf <bitstream>  Upload <bitstream>\n"+
 			"    -re              Reset EEPROM Firmware\n"+
-			"    -ue <ihx file>   Upload Firmware to EEPROM" );
+			"    -ue <ihx file>   Upload Firmware to EEPROM\n"+
+			"    -rm              Reset FLASH bitstream\n"+
+			"    -um <bitstream>  Upload Firmware to FLASH");
 	
 	
 // process global parameters
@@ -123,9 +125,9 @@ class FWLoader {
 		        System.err.println(helpMsg);
 	    	        System.exit(0);
 		}
-		else if ( args[i].equals("-i") || args[i].equals("-ii") || args[i].equals("-ru") || args[i].equals("-rf") || args[i].equals("-re")) {
+		else if ( args[i].equals("-i") || args[i].equals("-ii") || args[i].equals("-ru") || args[i].equals("-rf") || args[i].equals("-re") || args[i].equals("-rm") ) {
 		}
-		else if ( args[i].equals("-uu") || args[i].equals("-uf") || args[i].equals("-ue") ) {
+		else if ( args[i].equals("-uu") || args[i].equals("-uf") || args[i].equals("-ue") || args[i].equals("-um") ) {
 		    i+=1;
 		}
 		else {
@@ -153,12 +155,12 @@ class FWLoader {
 		} 
 		if ( args[i].equals("-ii") ) {
 		    System.out.println( ztex );
-		    String str = ztex.capabilityInfo("      ");
+		    String str = ztex.capabilityInfo("\n      ");
 		    if ( str.equals("") ) {
 			System.out.println( "   No capabilities");
 		    }	
 		    else {
-			System.out.println( "   Capabilities:\n"+str);
+			System.out.println( "   Capabilities:\n      "+str);
 		    }
 		} 
 		else if ( args[i].equals("-ru") ) {
@@ -196,6 +198,22 @@ class FWLoader {
 			System.exit(1);
 		    }
 		    System.out.println("FPGA configuration time: " + ztex.configureFpga( args[i], forceUpload ) + " ms");
+		} 
+		else if ( args[i].equals("-rm") ) {
+		    System.out.println("First free sector: " + ztex.flashFirstFreeSector() );
+		    ztex.flashResetBitstream();
+		    System.out.println("First free sector: " + ztex.flashFirstFreeSector() );
+		}
+		else if ( args[i].equals("-um") ) {
+		    i++;
+    	    	    if ( i >= args.length ) {
+			System.err.println("Error: Filename expected after -uf");
+			System.err.println(helpMsg);
+			System.exit(1);
+		    }
+		    System.out.println("First free sector: " + ztex.flashFirstFreeSector() );
+		    System.out.println("FPGA configuration time: " + ztex.flashUploadBitstream( args[i] ) + " ms");
+		    System.out.println("First free sector: " + ztex.flashFirstFreeSector() );
 		} 
 	    } 
 	} 

@@ -1124,7 +1124,7 @@ while (buf<>nil) and (bmp_exit<>bmp_exit_usererror) do
 	       j+=1;
 	       end;
 
-	    if (mode=bm_plain) and ((i4 xor pm_s) and pm_m=0) and (pm_q or matchstr(bc_pm,bm_plain)) and (matchstr(bc_lf+bc_pm) or (buf.d=length(bc_pm))) 
+	    if (mode=bm_plain) and ((i4 xor pm_s) and pm_m=0) and (pm_q or matchstr(bc_pm,bm_plain)) and (matchstr(bc_lf+bc_pm) or (buf.d+buf.d0=length(bc_pm))) 
 	      then begin
                    mode:=bm_pm;
                    setmode(length(bc_pm),bm_plain,mode);

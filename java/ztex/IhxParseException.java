@@ -18,8 +18,13 @@
 
 package ztex;
 
+/** * Signals that an error occurred while attempting to decode the ihx file. */ 
 public class IhxParseException extends Exception {
-    public IhxParseException( String msg ) {
+ /** 
+ * Constructs an instance from the given error message.
+ * @param msg The error message.
+ */
+   public IhxParseException( String msg ) {
         super( msg );
     }
 }    

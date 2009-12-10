@@ -18,12 +18,59 @@
 
 package ztex;
 
+import ch.ntb.usb.*;
+
+/** 
+  * Thrown if a device runs with no or the wrong firmware, i.e. if the ZTEX descriptor is not found or damaged. */
 public class InvalidFirmwareException extends Exception {
+/** 
+ * Constructs an instance from the given device and error message.
+ * @param ztex The device.
+ * @param msg The error message.
+ */
     public InvalidFirmwareException ( Ztex1 ztex, String msg) {
-	super( "bus=" + ztex.dev().dev().getBus().getDirname() + "  device=" + ztex.dev().dev().getFilename() + ": Invalid Firmware: "+ msg );
+	this( ztex.dev().dev(), msg );
     }
 
+/** 
+ * Constructs an instance from the given device and error message.
+ * @param dev The device.
+ * @param msg The error message.
+ */
+    public InvalidFirmwareException ( ZtexDevice1 dev, String msg) {
+	this( dev.dev(), msg );
+    }
+
+/** 
+ * Constructs an instance from the given device and error message.
+ * @param dev The device.
+ * @param msg The error message.
+ */
+    public InvalidFirmwareException (Usb_Device dev, String msg) {
+	super( "bus=" + dev.getBus().getDirname() + "  device=" + dev.getFilename() + ": Invalid Firmware: "+ msg );
+    }
+
+/** 
+ * Constructs an instance from the given device and error message.
+ * @param ztex The device.
+ */
     public InvalidFirmwareException ( Ztex1 ztex ) {
-	super( "bus=" + ztex.dev().dev().getBus().getDirname() + "  device=" + ztex.dev().dev().getFilename() + ": Invalid Firmware" );
+	this( ztex.dev().dev() );
+    }
+
+/** 
+ * Constructs an instance from the given device and error message.
+ * @param dev The device.
+ */
+    public InvalidFirmwareException ( ZtexDevice1 dev ) {
+	this( dev.dev() );
+    }
+
+/** 
+ * Constructs an instance from the given device and error message.
+ * @param dev The device.
+ */
+    public InvalidFirmwareException (Usb_Device dev ) {
+	super( "bus=" + dev.getBus().getDirname() + "  device=" + dev.getFilename() + ": Invalid Firmware" );
     }
 }    

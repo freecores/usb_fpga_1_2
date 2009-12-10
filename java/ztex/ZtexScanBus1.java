@@ -26,10 +26,35 @@ import java.util.*;
 
 import ch.ntb.usb.*;
 
+/**
+  * A class used for finding the EZ-USB devices on the USB.
+  * The devices found are stored as a list of {@link ZtexDevice1} instances.
+  * @see ZtexDevice1
+  */
+
 public class ZtexScanBus1 {
     private Vector<ZtexDevice1> devices = new Vector<ZtexDevice1>();
 
 // ******* ZtexScanBus1 ********************************************************
+/**
+  * Scans the USB for suitable devices and constructs a list of them.
+  * Four kinds of search filters can be applied
+  * <ol>
+  *   <li> usbVendorId and usbProductId can be used to search for devices with a given vendor and product ID. These devices must provide a ZTEX descriptor 1.</li>
+  *   <li> If a certain interface version is required, it can be specified using interfaceVersion. </li>
+  *   <li> Incompatible devices can be excluded by the specification of the ZTEX product ID's, see {@link ZtexDevice1#compatible(int,int,int,int)}. </li>
+  *   <li> If scanCypress is true, all devices (even unconfigured ones) with Cypress EZ-USB vendor and product ID's are considered. </li>
+  * </ol>
+  * @param usbVendorId USB vendor ID of the device to be searched for
+  * @param usbProductId USB product ID of the device to be searched for
+  * @param scanCypress Include devices with Cypress EZ-USB vendor and product ID's (even unconfigured ones) 
+  * @param quiet if true, don't print any warnings
+  * @param interfaceVersion The required interface version (&lt;0 if no interface version is required)
+  * @param productId0 Byte 0 of a given ZTEX product ID (&le;0 if not to be considered)
+  * @param productId1 Byte 1 of a given ZTEX product ID (&le;0 if not to be considered)
+  * @param productId2 Byte 2 of a given ZTEX product ID (&le;0 if not to be considered)
+  * @param productId3 Byte 3 of a given ZTEX product ID (&le;0 if not to be considered)
+  */
     public ZtexScanBus1 (int usbVendorId, int usbProductId, boolean scanCypress, boolean quiet, int interfaceVersion, int productId0, int productId1, int productId2, int productId3 ) {
 	LibusbJava.usb_find_busses();
 	LibusbJava.usb_find_devices();
@@ -47,13 +72,13 @@ public class ZtexScanBus1 {
 			    devices.add( zdev );
 			}
 		    }
-		    catch ( ZtexDescriptorException e ) {
+		    catch ( InvalidFirmwareException e ) {
 			if ( scanCypress && usbVendorId == ZtexDevice1.cypressVendorId && usbProductId == ZtexDevice1.cypressProductId ) {
 			    try {
 	    			ZtexDevice1 zdev = new ZtexDevice1( dev, -1, -1 );
 				if ( zdev.isCypress() ) devices.add( zdev );
 			    }
-			    catch ( ZtexDescriptorException e2 ) {
+			    catch ( InvalidFirmwareException e2 ) {
 				if ( ! quiet )
 				    System.err.println( e2.getLocalizedMessage() );		// should never occur
 			    }
@@ -74,15 +99,45 @@ public class ZtexScanBus1 {
 	}
     }
 
+/**
+  * Scans the USB for suitable devices and constructs a list of them.
+  * Three kinds of search filters can be applied
+  * <ol>
+  *   <li> usbVendorId and usbProductId can be used to search for devices with a given vendor and product ID. These devices must provide a ZTEX descriptor 1.</li>
+  *   <li> If a certain interface version is required, it can be specified using interfaceVersion. </li>
+  *   <li> If scanCypress is true, all devices (even unconfigured ones) with Cypress EZ-USB vendor and product ID's are considered. </li>
+  * </ol>
+  * @param usbVendorId USB vendor ID of the device to be searched for
+  * @param usbProductId USB product ID of the device to be searched for
+  * @param scanCypress Include devices with Cypress EZ-USB vendor and product ID's (even unconfigured ones) 
+  * @param quiet if true, don't print any warnings
+  * @param interfaceVersion The required interface version (<0 if no interface version is required)
+  */
     public ZtexScanBus1 (int usbVendorId, int usbProductId, boolean scanCypress, boolean quiet, int interfaceVersion ) {
 	this(usbVendorId, usbProductId, scanCypress, quiet, interfaceVersion, -1,-1,-1,-1 );
     }
 
+/**
+  * Scans the USB for suitable devices and constructs a list of them.
+  * Two kinds of search filters can be applied
+  * <ol>
+  *   <li> usbVendorId and usbProductId can be used to search for devices with a given vendor and product ID. These devices must provide a ZTEX descriptor 1.</li>
+  *   <li> If scanCypress is true, all devices (even unconfigured ones) with Cypress EZ-USB vendor and product ID's are considered. </li>
+  * </ol>
+  * @param usbVendorId USB vendor ID of the device to be searched for
+  * @param usbProductId USB product ID of the device to be searched for
+  * @param scanCypress Include devices with Cypress EZ-USB vendor and product ID's (even unconfigured ones) 
+  * @param quiet if true, don't print any warnings
+  */
     public ZtexScanBus1 (int usbVendorId, int usbProductId, boolean scanCypress, boolean quiet ) {
 	this(usbVendorId, usbProductId, scanCypress, quiet, -1, -1,-1,-1,-1 );
     }
 
 // ******* printBus ************************************************************
+/**
+  * Prints out a list of devices found.
+  * @param out Where the output is to be printed to.
+  */
     public void printBus( PrintStream out ) {
 	for (int i=0; i<devices.size(); i++ ) {
 	    out.println( i + ": " + devices.elementAt(i).toString() );
@@ -90,11 +145,21 @@ public class ZtexScanBus1 {
     }
     
 // ******* numberOfDevices *****************************************************
+/**
+  * Returns the number of devices found.
+  * @return the number of devices found.
+  */
     public final int numberOfDevices () {
 	return devices.size();
     }
 
 // ******* device **************************************************************
+/**
+  * Returns a device from the list of devices.
+  * @param i The device index.
+  * @return a device from the list of devices.
+  * @throws IndexOutOfBoundsException if i&lt;0 or i&ge;{@link #numberOfDevices()}
+  */
     public final ZtexDevice1 device (int i) throws IndexOutOfBoundsException {
 	if ( i<0 || i>=devices.size() ) 
 	    throw new IndexOutOfBoundsException( "Device number out of range. Valid numbers are 0.." + (devices.size()-1) ); 

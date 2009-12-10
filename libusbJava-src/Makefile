@@ -48,6 +48,9 @@ classes.made: $(JAVASRCS)
 	$(JAVAC) $(JAVASRCS)
 	echo > classes.made
 
+doc:
+	javadoc ch.ntb.usb -d ../docs/libusbJava
+	
 install2: all
 	$(INSTALLDIR) ../libusbJava/ch/ntb/usb/logger
 	$(INSTALLFILE) $(LIBTARGET) ../libusbJava

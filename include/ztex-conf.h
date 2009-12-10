@@ -64,6 +64,7 @@
 #define[POST_FPGA_CONFIG][]
 
 
+
 /* 
   Add a vedor request for endpoint 0, 
 
@@ -108,6 +109,15 @@ case $0:
     $2
     break;
 ]]
+
+/* 
+  This macro generates a EP0 stall and aborts the current loop. Stalls are usually used to indicate errors.
+*/
+#define[EP0_STALL;][{
+    EP0CS |= 0x01;	// set stall
+    ep0_payload_remaining = 0;
+    break;
+}]
 
 
 /* 
@@ -309,5 +319,11 @@ EP_CONFIG(1OUT,0,BULK,OUT,64,1);
    Usage: ENABLE_FLASH; 
 */
 #define[ENABLE_FLASH;][#define[FLASH_ENABLED][1]]
+
+/* 
+   This macro enables the FPGA configuration using a bitstream from the Flash memory
+   Usage: ENABLE_FLASH_BITSTREAM; 
+*/
+#define[ENABLE_FLASH_BITSTREAM;][#define[FLASH_BITSTREAM_ENABLED][1]]
 
 #endif
