@@ -1,4 +1,4 @@
-DIRS=ucecho
+DIRS=ucecho flashdemo flashbench intraffic standalone
 
 .PHONY: default all clean distclean
 

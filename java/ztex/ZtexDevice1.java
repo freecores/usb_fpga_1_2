@@ -1,6 +1,6 @@
 /*!
    Java Driver API for the ZTEX Firmware Kit
-   Copyright (C) 2008-2009 ZTEX e.K.
+   Copyright (C) 2009-2010 ZTEX e.K.
    http://www.ztex.de
 
    This program is free software; you can redistribute it and/or modify
@@ -30,6 +30,7 @@ import ch.ntb.usb.*;
   * A class representing an EZ-USB device that supports the ZTEX descriptor 1 or an unconfigured EZ-USB device.<br>
   * Instances of this class are usually created by {@link ZtexScanBus1}.
   * The following table describes the ZTEX descriptor 1.
+  * <a name="descriptor"></a>
   * <table bgcolor="#404040" cellspacing=1 cellpadding=4>
   *   <tr>
   *     <td bgcolor="#d0d0d0" valign="top"><b>Field name</b></td>
@@ -114,10 +115,30 @@ import ch.ntb.usb.*;
 */
 
 public class ZtexDevice1 {
-/** * The Cypress vendor ID 0x4b4. */
+/** * Cypress vendor ID: 0x4b4 */
     public static final int cypressVendorId = 0x4b4;
-/** * The EZ-USB product ID 0x8613. */
+/** * EZ-USB USB product ID: 0x8613 */
     public static final int cypressProductId = 0x8613;
+
+/** * ZTEX vendor ID: 0x221a */
+    public static final int ztexVendorId = 0x221A;
+/** 
+  * USB product ID for ZTEX devices that support ZTEX descriptor 1: 0x100.
+  * This product ID is intended for general purpose use and can be shared by all devices that base on ZTEX modules.
+  * Different products are identified by a second product ID, namely the PRODUCT_ID field of the <a href="#descriptor"> ZTEX descriptor 1</a>.
+  * <p>
+  * Please read the <a href="http://www.ztex.de/firmware-kit/usb_ids.e.html">informations about USB vendor and product ID's<a>.
+  * @see #ztexProductIdMax
+  */
+    public static final int ztexProductId = 0x100;
+/** 
+  * Largest USB product ID for ZTEX devices that support ZTEX descriptor 1: 0x1ff.
+  * USB product ID's from {@link #ztexProductId}+1 to ztexProductIdMax (0x101 to 0x1ff) are reserved for ZTEX devices and allow to identify products without reading the ZTEX descriptor.
+  * <p>
+  * Please read the <a href="http://www.ztex.de/firmware-kit/usb_ids.e.html">informations about USB vendor and product ID's<a>.
+  * @see #ztexProductId
+  */
+    public static final int ztexProductIdMax = 0x1ff;
 
     private Usb_Device dev = null;
     private boolean isCypress = false; 		// true if Cypress device
@@ -175,7 +196,7 @@ public class ZtexDevice1 {
 	
 	int handle = LibusbJava.usb_open(dev);
 
-	if ( handle > 0 ) {
+//	if ( handle > 0 ) {
 	    if ( dd.getIManufacturer() > 0 ) 
 	    	manufacturerString = LibusbJava.usb_get_string_simple( handle, dd.getIManufacturer() );
 	    if ( dd.getIProduct() > 0 ) 
@@ -183,7 +204,7 @@ public class ZtexDevice1 {
 	    if ( dd.getISerialNumber() > 0 )  
 	    	snString = LibusbJava.usb_get_string_simple( handle, dd.getISerialNumber() );
 		
-	    if ( usbVendorId == pUsbVendorId  &&  usbProductId == pUsbProductId ) {
+	    if ( usbVendorId == pUsbVendorId && (usbProductId == pUsbProductId || ( usbVendorId == ztexVendorId && pUsbProductId<0 && usbProductId>=ztexProductId && usbProductId<ztexProductIdMax ) ) ) {
 		if ( snString == null ) {
 		    LibusbJava.usb_close(handle);
 		    throw new InvalidFirmwareException( dev, "Not a ZTEX device" );  // ZTEX devices always have a SN. See also the next comment a few lines below
@@ -230,10 +251,10 @@ public class ZtexDevice1 {
 		
 		valid = true;
 	    }
-	}
-	else {
-	    throw new UsbException( dev, "Error opening device: " + LibusbJava.usb_strerror() );
-	}
+//	}
+//	else {
+//	    throw new UsbException( dev, "Error opening device: " + LibusbJava.usb_strerror() );
+//	}
 	
         LibusbJava.usb_close(handle);
     }
@@ -244,7 +265,7 @@ public class ZtexDevice1 {
   * @return a string representation if the device with a lot of useful information.
   */
     public String toString () {
-	return "bus=" + dev().getBus().getDirname() + "  device=" + dev().getFilename() + 
+	return "bus=" + dev().getBus().getDirname() + "  device=" + dev().getFilename() + "  ID=" + Integer.toHexString(usbVendorId) + ":" + Integer.toHexString(usbProductId) +
 	    "\n   " + ( isCypress ? "Cypress" : "" ) +
 	      ( manufacturerString == null ? "" : ("    Manufacturer=\""  + manufacturerString + "\"") ) +
 	      ( productString == null ? "" : ("  Product=\""  + productString + "\"") ) +

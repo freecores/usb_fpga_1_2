@@ -1,4 +1,4 @@
-DIRS=all usb-fpga-1.2 usb-1.0
+DIRS=all usb-fpga-1.2 usb-1.0 usb-fpga-1.11
 
 .PHONY: default all clean distclean
 

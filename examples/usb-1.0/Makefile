@@ -1,4 +1,4 @@
-DIRS=flashdemo
+DIRS=flashdemo flashbench
 
 .PHONY: default all clean distclean
 

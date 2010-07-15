@@ -1,6 +1,6 @@
 /*!
    ZTEX Firmware Kit for EZ-USB Microcontrollers
-   Copyright (C) 2008-2009 ZTEX e.K.
+   Copyright (C) 2009-2010 ZTEX e.K.
    http://www.ztex.de
 
    This program is free software; you can redistribute it and/or modify
@@ -22,6 +22,8 @@
 
 #ifndef[ZTEX_H]
 #define[ZTEX_H]
+
+#define[INIT_CMDS;][]
 
 /* *********************************************************************
    ***** include the basic functions ***********************************
@@ -65,11 +67,21 @@
 #define[MMC_BIT_CLK][5]
 #include[ztex-flash1.h]
 
-#elifeq[PRODUCT_IS][UM-1_10]
+#elifeq[PRODUCT_IS][UFM-1_10]
+#define[MMC_PORT][A]
+#define[MMC__PORT_DO][D]
+#define[MMC_BIT_DO][0]
+#define[MMC_BIT_CS][5]
+#define[MMC_BIT_DI][6]
+#define[MMC_BIT_CLK][7]
+#include[ztex-flash1.h]
+
+#elifeq[PRODUCT_IS][UFM-1_11]
 #define[MMC_PORT][C]
-#define[MMC_BIT_CS][4]
-#define[MMC_BIT_DI][5]
-#define[MMC_BIT_DO][7]
+#define[MMC__PORT_DO][D]
+#define[MMC_BIT_DO][0]
+#define[MMC_BIT_CS][5]
+#define[MMC_BIT_DI][7]
 #define[MMC_BIT_CLK][6]
 #include[ztex-flash1.h]
 
@@ -83,11 +95,15 @@
    ***** FPGA configuration support ************************************
    ********************************************************************* */
 #ifeq[PRODUCT_IS][UFM-1_0]
-#include[ztex-fpga.h]
+#include[ztex-fpga1.h]
 #elifeq[PRODUCT_IS][UFM-1_1]
-#include[ztex-fpga.h]
+#include[ztex-fpga1.h]
 #elifeq[PRODUCT_IS][UFM-1_2]
-#include[ztex-fpga.h]
+#include[ztex-fpga1.h]
+#elifeq[PRODUCT_IS][UFM-1_10]
+#include[ztex-fpga2.h]
+#elifeq[PRODUCT_IS][UFM-1_11]
+#include[ztex-fpga3.h]
 #endif
 
 /* *********************************************************************
@@ -155,8 +171,16 @@ void init_USB ()
 #elifeq[PRODUCT_IS][UFM-1_2]
     IOA1 = 1;		
     OEA |= bmBIT1;
+#elifeq[PRODUCT_IS][UFM-1_10]
+    IOA1 = 1;		
+    OEA |= bmBIT1;
+#elifeq[PRODUCT_IS][UFM-1_11]
+    IOA1 = 1;		
+    OEA |= bmBIT1;
 #endif
-    
+
+    INIT_CMDS;    
+
     EA = 0;
     EUSB = 0;
 

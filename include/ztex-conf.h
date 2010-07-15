@@ -1,6 +1,6 @@
 /*!
    ZTEX Firmware Kit for EZ-USB Microcontrollers
-   Copyright (C) 2008-2009 ZTEX e.K.
+   Copyright (C) 2009-2010 ZTEX e.K.
    http://www.ztex.de
 
    This program is free software; you can redistribute it and/or modify
@@ -34,14 +34,24 @@
 /* 
    This macro defines the USB Vendor ID and USB Product ID  (not the product ID
    from the ZTEX descriptor). The Vendor ID must be purchased from the USB-IF
-   (http://www.usb.org). The Cypress Vendor ID may only be used during the
-   develpoment process.
+   (http://www.usb.org). 
+   
+   The default vendor ID is the ZTEX vendor ID 0x221A, default product ID is
+   0x100 which is assigned to ZTEX modules. These ID's can be shared by many
+   differend products which are identified by the product ID of the ZTEX
+   descriptor. According to the USB-IF rules these ID's must not be used by
+   hardware which is not manufactured by ZTEX. (Of course, this ID's can be 
+   used during the development process or for internal purposes.)
+   
+   Please read the http://www.ztex.de/firmware-kit/usb_ids.e.html for more 
+   informations about this topic.   
+   
    Usage:
 	SET_VPID(<Vendor ID>,<Pioduct ID>);
 */
 #define[SET_VPID(][,$1);][#define[USB_VENDOR_ID][$0]
 #define[USB_PRODUCT_ID][$1]]
-
+SET_VPID(0x221a,0x100);
 
 /* 
    This macro is called before FPGA Firmware is reset, e.g. to save some
@@ -121,25 +131,32 @@ case $0:
 
 
 /* 
-   Endoint 2,4,5,8 configuration:
+   Endoint 1,2,4,5,8 configuration:
 
    EP_CONFIG(<EP number>,<interface>,<type>,<direction>,<size>,<buffers>)
-        <EP number> = 2 | 4 | 6 | 8		Endpoint numer
-        <INTERFACE> = 0 | 1 | 2 | 3		To which interface this endpoint belongs
+        <EP number> = 1IN | 1OUT | 2 | 4 | 6 | 8	Endpoint numer
+        <INTERFACE> = 0 | 1 | 2 | 3			To which interface this endpoint belongs
 	<type>      = BULK  | ISO | INT
 	<dir>       = IN | OUT
 	<size>      = 512 | 1024
 	<buffers>   = 1 | 2 | 3 | 4
-   Example: EP2_CONFIG(2,0,ISO,OUT,1024,4);
+   Example: EP_CONFIG(2,0,ISO,OUT,1024,4);
    Importand note: No spaces next to the commas
 
-   Endoint 1 configuration. These Endpoints are defined by default and assigned to interface 0.
+
+   Endoint 1 configuration:
+   
+   These Endpoints are defined by default as bulk endpoints and are assigned to interface 0.
+   Endpoint size is always 64 bytes, but reported Endpoint size will be 512 bytes for USB 2.0 compliance. 
+   
+   These Endpoints can be redefined using EP_CONFIG or using:
+   
    EP1IN_CONFIG(<interface>);
-           <INTERFACE> = 0 | 1 | 2 | 3		To which interface EP1IN belongs; default: 0
+           <INTERFACE> = 0 | 1 | 2 | 3		Interface to which EP1IN belongs; default: 0
    EP1OUT_CONFIG(<interface>);
-           <INTERFACE> = 0 | 1 | 2 | 3		To which interface EP1OUT belongs; default: 0
+           <INTERFACE> = 0 | 1 | 2 | 3		Interface to which EP1OUT belongs; default: 0
    EP1_CONFIG(<interface>);
-           <INTERFACE> = 0 | 1 | 2 | 3		To which interface EP1IN and EP1OUT belongs; default: 0
+           <INTERFACE> = 0 | 1 | 2 | 3		Interface to which EP1IN and EP1OUT belongs; default: 0
 
    The following (maximum) configurations are possible:
    EP2		EP4	EP6	EP8
@@ -180,8 +197,7 @@ case $0:
 #elifneq[$3][OUT]
 #error[EP_CONFIG: Invalid 4th parameter: `$3'. Expected `IN' or 'OUT']
 #endif
-#ifeq[$4][64]
-#elifeq[$4][512]
+#ifeq[$4][512]
 #elifneq[$4][1024]
 #error[EP_CONFIG: Invalid 5th parameter: `$4'. Expected `512' or '1024']
 #endif
@@ -202,8 +218,74 @@ case $0:
 #define[EP1_CONFIG(][);][#define[EP1IN_INTERFACE][$0]
 #define[EP1OUT_INTERFACE][$0]]
 
-EP_CONFIG(1IN,0,BULK,IN,64,1);
-EP_CONFIG(1OUT,0,BULK,OUT,64,1);
+EP_CONFIG(1IN,0,BULK,IN,512,1);
+EP_CONFIG(1OUT,0,BULK,OUT,512,1);
+
+/* 
+   ISO and INT Transactions per microframe:
+
+   Default value is 1 for all endpoints.
+
+   EP_PPMF(<EP number>,<tansactions per microframe>)
+        <EP number>                  = 1IN | 1OUT | 2 | 4 | 6 | 8	Endpoint
+        <tansactions per microframe> = 1 | 2 | 3			Transactions per microframe
+        
+   Example: EP_PPMF(2,3);
+   Importand note: No spaces next to the commas
+*/
+#define[EP_PPMF(][,$1);][
+#ifeq[$0][1IN]
+#elifeq[$0][1OUT]
+#elifeq[$0][2]
+#elifeq[$0][4]
+#elifeq[$0][6]
+#elifneq[$0][8]
+#error[EP_CONFIG: Invalid 1st parameter: `$0'. Expected `1IN', `1OUT', `2', `4', `6' or '8']
+#endif
+#ifeq[$1][1]
+#elifeq[$1][2]
+#elifneq[$1][3]
+#error[EP_CONFIG: Invalid 2nd parameter: `$1'. Expected `1', `2' or '3']
+#endif
+#define[EP$0_PPMF][$1]]
+
+EP_PPMF(1IN,1);
+EP_PPMF(1OUT,1);
+EP_PPMF(2,1);
+EP_PPMF(4,1);
+EP_PPMF(6,1);
+EP_PPMF(8,1);
+
+/* 
+   Polling interval in microframes for INT transactions:
+
+   Default value is 1 for all endpoints.
+
+   EP_POLL(<EP number>,<polling interval>)
+        <EP number>        = 1IN | 1OUT | 2 | 4 | 6 | 8		Endpoint
+        <polling interval> = 1 | 2 | 3				Polling interval
+        
+   Example: EP_POLL(2,1);
+   Importand note: No spaces next to the commas
+*/
+#define[EP_POLL(][,$1);][
+#ifeq[$0][1IN]
+#elifeq[$0][1OUT]
+#elifeq[$0][2]
+#elifeq[$0][4]
+#elifeq[$0][6]
+#elifneq[$0][8]
+#error[EP_CONFIG: Invalid 1st parameter: `$0'. Expected `1IN', `1OUT', `2', `4', `6' or '8']
+#endif
+#define[EP$0_POLL][$1]]
+
+EP_POLL(1IN,1);
+EP_POLL(1OUT,1);
+EP_POLL(2,1);
+EP_POLL(4,1);
+EP_POLL(6,1);
+EP_POLL(8,1);
+
 
 
 /* 
@@ -268,6 +350,30 @@ EP_CONFIG(1OUT,0,BULK,OUT,64,1);
 #define[FWVER][$4]
 #define[PRODUCT_IS][UFM-1_2]
 #define[PRODUCT_STRING]["USB-FPGA Module 1.2"]]
+
+/* 
+   Identify as ZTEX USB FPGA Module 1.10
+   Usage: IDENTITY_UFM_1_10(<PRODUCT_ID_0>.<PRODUCT_ID_1><PRODUCT_ID_2>.<PRODUCT_ID_3>,<FW_VERSION>);
+*/
+#define[IDENTITY_UFM_1_10(][.$1.$2.$3,$4);][#define[PRODUCT_ID_0][$0]
+#define[PRODUCT_ID_1][$1]
+#define[PRODUCT_ID_2][$2]
+#define[PRODUCT_ID_3][$3]
+#define[FWVER][$4]
+#define[PRODUCT_IS][UFM-1_10]
+#define[PRODUCT_STRING]["USB-FPGA Module 1.10"]]
+
+/* 
+   Identify as ZTEX USB FPGA Module 1.11
+   Usage: IDENTITY_UFM_1_10(<PRODUCT_ID_0>.<PRODUCT_ID_1><PRODUCT_ID_2>.<PRODUCT_ID_3>,<FW_VERSION>);
+*/
+#define[IDENTITY_UFM_1_11(][.$1.$2.$3,$4);][#define[PRODUCT_ID_0][$0]
+#define[PRODUCT_ID_1][$1]
+#define[PRODUCT_ID_2][$2]
+#define[PRODUCT_ID_3][$3]
+#define[FWVER][$4]
+#define[PRODUCT_IS][UFM-1_11]
+#define[PRODUCT_STRING]["USB-FPGA Module 1.11"]]
 
 
 /* 

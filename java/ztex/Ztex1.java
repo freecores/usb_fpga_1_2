@@ -1,6 +1,6 @@
 /*!
    Java Driver API for the ZTEX Firmware Kit
-   Copyright (C) 2008-2009 ZTEX e.K.
+   Copyright (C) 2009-2010 ZTEX e.K.
    http://www.ztex.de
 
    This program is free software; you can redistribute it and/or modify
@@ -44,7 +44,7 @@ public class Ztex1 {
     private ZtexDevice1 dev = null;
     private boolean oldDevices[] = new boolean[128];  
     private String usbBusName = null;
-/** * Setting to true will enable certain workarounds, e.g. to deal with bad driver/OS implementations. */
+/** * Setting to true enables certain workarounds, e.g. to deal with bad driver/OS implementations. */
     public boolean certainWorkarounds = false;
 /** * The timeout for  control messages in ms. */    
     public int controlMsgTimeout = 1000;	// in ms
@@ -60,8 +60,8 @@ public class Ztex1 {
 	dev = pDev;
 
 	handle = LibusbJava.usb_open(dev.dev());
-	if ( handle<=0 ) 
-	    throw new UsbException(dev.dev(), "Error opening device");
+//	if ( handle<=0 ) 
+//	    throw new UsbException(dev.dev(), "Error opening device");
     }
 
 // ******* finalize ************************************************************
@@ -297,6 +297,54 @@ public class Ztex1 {
     public void vendorRequest2 (int cmd, String func, byte[] buf, int maxlen) throws UsbException {
 	vendorRequest2(cmd, func, 0, 0, buf, maxlen);
     }
+
+
+
+// ******* setConfiguration ****************************************************
+/**
+  * Sets the configuration.
+  * @param config The configuration number (usually 1)
+  * @throws UsbException if an error occurs while attempting to set the configuration.
+  */
+    public void setConfiguration ( int config) throws UsbException{
+	if ( LibusbJava.usb_set_configuration(handle(), config) < 0 )
+	    throw new UsbException("Setting configuration to " + config + " failed: " + LibusbJava.usb_strerror());
+    }
+
+
+// ******* trySetConfiguration ****************************************************
+/**
+  * Tries to set the configuration.
+  * If an error occurs while attempting to set the configuration, a warning messaage is printed to stderr.
+  * @param config The configuration number (usually 1)
+  */
+    public void trySetConfiguration ( int config) {
+	if ( LibusbJava.usb_set_configuration(handle(), config) < 0 )
+	    System.err.println("Setting configuration to " + config + " failed: " + LibusbJava.usb_strerror());
+    }
+
+
+// ******* claimInterface ******************************************************
+/**
+  * Claims an interface.
+  * @param iface The interface number (usually 0)
+  * @throws UsbException if an error occurs while attempting to claim the interface.
+  */
+    public void claimInterface ( int iface) throws UsbException{
+	if ( LibusbJava.usb_claim_interface(handle(), iface) < 0 )
+	    throw new UsbException("Claiming interface " + iface + " failed: " + LibusbJava.usb_strerror());
+    }
+
+
+// ******* releaseInterface ****************************************************
+/**
+  * Releases an interface.
+  * @param iface The interface number (usually 0)
+  */
+    public void releaseInterface ( int iface ) {
+	LibusbJava.usb_release_interface(handle(), iface);
+    }
+
 
 // ******* findOldDevices ******************************************************
     private synchronized void findOldDevices () {

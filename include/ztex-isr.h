@@ -1,6 +1,6 @@
 /*!
    ZTEX Firmware Kit for EZ-USB Microcontrollers
-   Copyright (C) 2008-2009 ZTEX e.K.
+   Copyright (C) 2009-2010 ZTEX e.K.
    http://www.ztex.de
 
    This program is free software; you can redistribute it and/or modify
@@ -63,19 +63,19 @@ static void resetToggleData () {
 /* *********************************************************************
    ***** getStringDescriptor *******************************************
    ********************************************************************* */
-#define[SEND_STRING_DESCRIPTOR(][,$1);][sendStringDescriptor(LSB($1), MSB($1), sizeof($1) );]
+#define[SEND_STRING_DESCRIPTOR(][);][sendStringDescriptor(LSB($0), MSB($0), sizeof($0) );]
 
 static void sendStringDescriptor (BYTE loAddr, BYTE hiAddr, BYTE size)
 {
     BYTE i;
     if ( size > 31)
 	size = 31;
+    AUTOPTRSETUP = 7;
     AUTOPTRL1 = loAddr;
     AUTOPTRH1 = hiAddr;
     AUTOPTRL2 = (BYTE)(((unsigned short)(&EP0BUF))+1);
     AUTOPTRH2 = (BYTE)((((unsigned short)(&EP0BUF))+1) >> 8);
     XAUTODAT2 = 3;
-    AUTOPTRSETUP = 7;
     for (i=0; i<size; i++) {
 	XAUTODAT2 = XAUTODAT1;
 	XAUTODAT2 = 0;
@@ -214,16 +214,16 @@ static void SUDAV_ISR () interrupt
 		case 0x03:		// strings
 		    switch (SETUPDAT[2]) {
 			case 1:
-			    SEND_STRING_DESCRIPTOR(1,manufacturerString);
+			    SEND_STRING_DESCRIPTOR(manufacturerString);
 			    break;
 			case 2:
-			    SEND_STRING_DESCRIPTOR(2,productString);
+			    SEND_STRING_DESCRIPTOR(productString);
 			    break;
 			case 3:
-			    SEND_STRING_DESCRIPTOR(3,SN_STRING);
+			    SEND_STRING_DESCRIPTOR(SN_STRING);
 			    break;
 			case 4:
-			    SEND_STRING_DESCRIPTOR(4,configurationString);
+			    SEND_STRING_DESCRIPTOR(configurationString);
 			    break; 
 			default:
 			    SUDPTRH = MSB(&EmptyStringDescriptor);

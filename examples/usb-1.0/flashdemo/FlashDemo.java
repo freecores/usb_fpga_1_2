@@ -1,6 +1,6 @@
 /*!
-   flashdemo -- Flash memory example
-   Copyright (C) 2008-2009 ZTEX e.K.
+   flashdemo -- demo for Flash memory access from firmware and host software for ZTEX USB Module 1.0
+   Copyright (C) 2009-2010 ZTEX e.K.
    http://www.ztex.de
 
    This program is free software; you can redistribute it and/or modify
@@ -66,7 +66,7 @@ class FlashDemo extends Ztex1v1 {
 	    LibusbJava.usb_init();
 
 // scan the USB bus
-	    ZtexScanBus1 bus = new ZtexScanBus1( ZtexDevice1.cypressVendorId, ZtexDevice1.cypressProductId, true, false, 1);
+	    ZtexScanBus1 bus = new ZtexScanBus1( ZtexDevice1.ztexVendorId, ZtexDevice1.ztexProductId, true, false, 1);
 	    if ( bus.numberOfDevices() <= 0) {
 		System.err.println("No devices found");
 	        System.exit(0);
@@ -108,7 +108,7 @@ class FlashDemo extends Ztex1v1 {
 	    ztex.certainWorkarounds = workarounds;
 	    
 // upload the firmware if necessary
-	    if ( force || ! ztex.valid() || ! ztex.dev().productString().equals("Flash demo")  ) {
+	    if ( force || ! ztex.valid() || ! ztex.dev().productString().equals("Flash demo for UM 1.0")  ) {
 		System.out.println("Firmware upload time: " + ztex.uploadFirmware( "flashdemo.ihx", force ) + " ms");
 	    }	
 		

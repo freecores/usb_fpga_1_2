@@ -1,6 +1,6 @@
 /*!
    Java Driver API for the ZTEX Firmware Kit
-   Copyright (C) 2008-2009 ZTEX e.K.
+   Copyright (C) 2009-2010 ZTEX e.K.
    http://www.ztex.de
 
    This program is free software; you can redistribute it and/or modify
@@ -226,6 +226,8 @@ public class Ztex1v1 extends Ztex1 {
     private int fpgaChecksum = 0;
     private int fpgaBytes = 0;
     private int fpgaInitB = 0;
+    private int fpgaFlashResult = 255;
+    private boolean fpgaFlashBitSwap = false;
     
     /** * Number of bytes written to EEPROM. (Obtained by {@link #eepromState()}.) */
     public int eepromBytes = 0;
@@ -252,6 +254,8 @@ public class Ztex1v1 extends Ztex1 {
     public static final int FLASH_EC_READ_ERROR = 5;
     /** * Signals an error while attempting to write to Flash. */
     public static final int FLASH_EC_WRITE_ERROR = 6;
+    /** * Signals the the installed Flash memeory is not supported. */
+    public static final int FLASH_EC_NOTSUPPORTED = 7;
 
 // ******* Ztex1v1 *************************************************************
 /** 
@@ -346,16 +350,18 @@ public class Ztex1v1 extends Ztex1 {
 
 // ******* getFpgaState ********************************************************
     private void getFpgaState () throws UsbException, InvalidFirmwareException, CapabilityException {
-	byte[] buffer = new byte[7];
+	byte[] buffer = new byte[9];
 	checkCapability(0,1);
-	vendorRequest2(0x30, "getFpgaState", buffer, 7);
+	vendorRequest2(0x30, "getFpgaState", buffer, 9);
 	fpgaConfigured = buffer[0] == 0;
 	fpgaChecksum = buffer[1] & 0xff;
 	fpgaBytes = ((buffer[5] & 0xff)<<24) | ((buffer[4] & 0xff)<<16) | ((buffer[3] & 0xff)<<8) | (buffer[2] & 0xff);
 	fpgaInitB = buffer[6] & 0xff;
+	fpgaFlashResult = buffer[7];
+	fpgaFlashBitSwap = buffer[8] != 0;
     }
 
-// ******* getFpgaState ********************************************************
+// ******* printFpgaState ******************************************************
 /**
   * Prints out the FPGA state.
   * @throws InvalidFirmwareException if interface 1 is not supported.
@@ -364,7 +370,7 @@ public class Ztex1v1 extends Ztex1 {
   */
     public void printFpgaState () throws UsbException, InvalidFirmwareException, CapabilityException {
 	getFpgaState();
-	System.out.println( "size=" + fpgaBytes + " ;  checksum=" + fpgaChecksum + "; INIT_B_HIST=" + fpgaInitB +" (should be 222)" );
+	System.out.println( "size=" + fpgaBytes + ";  checksum=" + fpgaChecksum + "; INIT_B_HIST=" + fpgaInitB +" (should be 222); flash_configuration_result=" + fpgaFlashResult );
     }
 
 // ******* getFpgaConfiguration ************************************************
@@ -484,8 +490,8 @@ public class Ztex1v1 extends Ztex1 {
 			+ fpgaChecksum + " , should be " + cs + ";  INIT_B_HIST=" + fpgaInitB +", should be 222)" );
 		}
 //		System.out.println( "FPGA configuration: size=" + fpgaBytes + " ,  " + (bs - fpgaBytes) + " bytes went lost;  checksum=" + fpgaChecksum + " , should be " + cs + ";  INIT_B_HIST=" + fpgaInitB +", should be 222" );
-		if ( fpgaInitB != 222 )
-		    System.err.println ( "Warning: FPGA configuration may have failed: DONE pin has gone high but INIT_B states are wrong: " + fpgaInitB +", should be 222");
+//		if ( fpgaInitB != 222 )
+//		    System.err.println ( "Warning: FPGA configuration may have failed: DONE pin has gone high but INIT_B states are wrong: " + fpgaInitB +", should be 222");
 			
 		tries = 0;
 		t0 += new Date().getTime();
@@ -755,6 +761,8 @@ public class Ztex1v1 extends Ztex1 {
 		return "Read error";
 	    case FLASH_EC_WRITE_ERROR:
 		return "Write error";
+	    case FLASH_EC_NOTSUPPORTED:
+		return "Not supported";
 	}
 	return "Error " + errNum;
     }
@@ -838,7 +846,7 @@ public class Ztex1v1 extends Ztex1 {
 	    throw new CapabilityException(this, "No Flash memory installed or");
 
 	try {
-	    vendorRequest2( 0x41, "Flash Read", sector, 0, buf, flashSectorSize );
+	    vendorRequest2( 0x41, "Flash Read", sector, sector >> 16, buf, flashSectorSize );
         }
         catch ( UsbException e ) {
 	    throw new UsbException( dev().dev(), "Flash Read: " + flashStrError() ); 
@@ -861,7 +869,7 @@ public class Ztex1v1 extends Ztex1 {
 	    throw new CapabilityException(this, "No Flash memory installed or");
 
 	try {
-	    vendorCommand2( 0x42, "Flash Write", sector, 0, buf, flashSectorSize );
+	    vendorCommand2( 0x42, "Flash Write", sector, sector >> 16, buf, flashSectorSize );
 	}
 	catch ( UsbException e ) {
 	    throw new UsbException( dev().dev(), "Flash Write: " + flashStrError() );
@@ -926,7 +934,7 @@ public class Ztex1v1 extends Ztex1 {
   * @throws CapabilityException if Flash memory access is not supported by the firmware.
   */
     public long flashSize () throws UsbException, InvalidFirmwareException, CapabilityException {
-	return flashSectorSize() * flashSectors();
+	return flashSectorSize() * (long)flashSectors();
     }
 
 // ******* printMmcState *******************************************************
@@ -939,15 +947,16 @@ public class Ztex1v1 extends Ztex1 {
   * @throws CapabilityException if Flash memory access is not supported by the firmware.
   */
     public boolean printMmcState ( ) throws UsbException, InvalidFirmwareException, CapabilityException {
-	byte[] buf = new byte[22];
+	byte[] buf = new byte[23];
 	checkCapability(0,2);
-	vendorRequest2(0x43, "MMC State", 0, 0, buf, 22);
+	vendorRequest2(0x43, "MMC State", 0, 0, buf, 23);
 	System.out.println("status=" + Integer.toBinaryString(256+(buf[0] & 255)).substring(1) + "." + Integer.toBinaryString(256+(buf[1] & 255)).substring(1) + 
 		"   lastCmd=" + buf[3] + 
 		"   lastCmdResponse=" + Integer.toBinaryString(256+(buf[4] & 255)).substring(1) + 
 		"   ec=" + buf[2] +
-		"   BUSY=" + buf[21] + 
-		"   buf=" + (buf[5] & 255)+" "+(buf[6] & 255)+" "+(buf[7] & 255)+" "+(buf[8] & 255)+" "+(buf[9] & 255)+" "+(buf[10] & 255)+"  "+(buf[11] & 255)); // +" "+(buf[12] & 255)+" "+(buf[13] & 255)+" "+(buf[14] & 255)+" "+(buf[15] & 255)+" "+(buf[16] & 255));
+		"   BUSY=" + buf[22] + 
+		"   SDHC=" + buf[5] + 
+		"   buf=" + (buf[6] & 255)+" "+(buf[7] & 255)+" "+(buf[8] & 255)+" "+(buf[9] & 255)+" "+(buf[10] & 255)+" "+(buf[11] & 255)+"  "+(buf[12] & 255)); // +" "+(buf[13] & 255)+" "+(buf[14] & 255)+" "+(buf[15] & 255)+" "+(buf[16] & 255)+" "+(buf[17] & 255));
 
 	return flashEnabled == 1;
     }
@@ -1001,9 +1010,11 @@ public class Ztex1v1 extends Ztex1 {
   * @throws BitstreamReadException if an error occurred while attempting to read the Bitstream.
   */
     public long flashUploadBitstream ( String fwFileName ) throws BitstreamReadException, UsbException, InvalidFirmwareException, CapabilityException {
+	checkCapability(0,1);
 	checkCapability(0,2);
 	if ( ! flashEnabled() )
 	    throw new CapabilityException(this, "No Flash memory installed or");
+	getFpgaState();
 	
 // read the Bitstream file	
         byte[][] buffer = new byte[2048][];
@@ -1014,6 +1025,19 @@ public class Ztex1v1 extends Ztex1 {
 	    for ( i=0; i<buffer.length && j==flashSectorSize; i++ ) {
 		buffer[i] = new byte[flashSectorSize]; 
 		j = inputStream.read( buffer[i] );
+		if ( fpgaFlashBitSwap ) {
+		    for (int k=0; k<flashSectorSize; k++ ) {
+			byte b = buffer[i][k];
+			buffer[i][k] = (byte) ( ((b & 128) >> 7) |
+ 		     		    	        ((b &  64) >> 5) |
+		     		    	        ((b &  32) >> 3) |
+		     		                ((b &  16) >> 1) |
+		     		                ((b &   8) << 1) |
+		     		                ((b &   4) << 3) |
+		     		                ((b &   2) << 5) |
+		     		                ((b &   1) << 7));
+		    }
+		}
 		if ( j < 0 ) 
 		    j = 0;
 	    }

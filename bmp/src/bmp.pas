@@ -1,6 +1,6 @@
 {*!
    bmp -- babel macro processor
-   Copyright (C) 2008-2009 ZTEX e.K.
+   Copyright (C) 2009-2010 ZTEX e.K.
    http://www.ztex.de
 
    This program is free software; you can redistribute it and/or modify
@@ -390,35 +390,8 @@ initsymb('UNIX');
 {$ifdef WINDOWS}
 initsymb('WINDOWS');
 {$endif}
-{$ifdef dos}
-initsymb('dos');
-{$endif}
-{$ifdef linux}
-initsymb('linux');
-{$endif}
-{$ifdef unix}
-initsymb('unix');
-{$endif}
-{$ifdef go32v1}
-initsymb('go32v1');
-{$endif}
-{$ifdef go32v2}
-initsymb('go32v2');
-{$endif}
-{$ifdef os2}
-initsymb('os2');
-{$endif}
-{$ifdef win32}
-initsymb('win32');
-{$endif}
-{$ifdef macos}
-initsymb('macos');
-{$endif}
-{$ifdef amiga}
-initsymb('amiga');
-{$endif}
-{$ifdef atari}
-initsymb('atari');
+{$ifdef LINUX}
+initsymb('LINUX');
 {$endif}
 end;
 
@@ -432,7 +405,8 @@ end;
 
 { ****** run ******************************************************** }
 procedure CMainBmp.run(const mf:ansistring; var fo:text);
-var i,mode,j,k,l,bl,ifc  : longint;
+var i,mode,j,k,l,ifc     : longint;
+    bl,bl_ne             : longint;
     outfile,bm_expand    : longint;   
     prevli,ampos         : dword;
     sx,endnoexpand       : bmpstring;
@@ -657,12 +631,12 @@ while (buf<>nil) and (bmp_exit<>bmp_exit_usererror) do
 	        repeat
 		  i+=1;
 		  k:=bufm[(rbp-i) and rbufmax];
-//		  writeln(stderr,'  i=',i,'  k=',k);
+//		  writeln(stderr,'  i=',i,'  k=',k,' rbuf=',rbuf[(rbp-i) and rbufmax]);
 		  until (i>=rbufmax) or (k=bm_if) or (k=bm_ifeq_scb2) or (k=bm_ifeq_scb2_ne) or (k=bm_ifneq_scb2) or (k=bm_ifneq_scb2_ne);
 	        repeat
 		  j+=1;
 		  l:=bufm[(rbp-j) and rbufmax];
-//		  writeln(stderr,'  j=',j,'  l=',l);
+//		  writeln(stderr,'  j=',j,'  l=',l,' rbuf=',rbuf[(rbp-j) and rbufmax]);
 		  until (j>=rbufmax) or (l=bm_if) or (l=bm_ifeq_scb1) or (l=bm_ifeq_scb1_ne) or (l=bm_ifneq_scb1) or (l=bm_ifneq_scb1_ne);
 //		writeln(stderr,rbp,',',i,',',j,'-->',rbuf[(rbp-i) and rbufmax],'<-->',rbuf[(rbp-j) and rbufmax],'<--');
 	        until (j>=rbufmax) or (l=bm_if) or (k=bm_if) or (rbuf[(rbp-i) and rbufmax]<>rbuf[(rbp-j) and rbufmax]);
@@ -925,11 +899,12 @@ while (buf<>nil) and (bmp_exit<>bmp_exit_usererror) do
 	      mode:=bm_plain;
               end;
 {noexpand mode}
-           if ((mode=bm_pm) or (mode=bm_ifeq_scb1) or (mode=bm_ifeq_scb2) or (mode=bm_ifneq_scb1) or (mode=bm_ifneq_scb2)) and matchstr(bc_pm+'noexpand'+bc_ob,bm_pm) then
+           if ((mode=bm_pm) or (mode=bm_ifeq_scb1) or (mode=bm_ifeq_scb2) or (mode=bm_ifneq_scb1) or (mode=bm_ifneq_scb2)) and matchstr(bc_pm+'noexpand'+bc_ob,mode) then
               begin
-              setmode(length(bc_pm+'noexpand'+bc_ob),bm_pm,bm_noexpand);
+              setmode(length(bc_pm+'noexpand'+bc_ob),mode,bm_noexpand);
 	      mode:=bm_noexpand_scb;
 	      bli[0]:=lineInfo;
+              bl_ne:=bl;
               bl:=1;
               end;
            if (mode=bm_noexpand_scb) and (bl=0) then
@@ -943,15 +918,13 @@ while (buf<>nil) and (bmp_exit<>bmp_exit_usererror) do
 		else mode:=bm_neplain;
 		end;
 	      ampos:=lineInfo;
+	      bl:=bl_ne-1;	
               end;
-           if ((mode=bm_neplain) or (mode=bm_ifeq_scb1_ne) or (mode=bm_ifeq_scb2_ne) or (mode=bm_ifneq_scb1_ne) or (mode=bm_ifneq_scb2_ne)) and (endnoexpand<>'') and matchstr(endnoexpand,bm_neplain) then
+           if ((mode=bm_neplain) or (mode=bm_ifeq_scb1_ne) or (mode=bm_ifeq_scb2_ne) or (mode=bm_ifneq_scb1_ne) or (mode=bm_ifneq_scb2_ne)) and (endnoexpand<>'') and matchstr(endnoexpand,mode) then
               begin
-              setmode(length(endnoexpand),bm_neplain,bm_noexpand);
+              setmode(length(endnoexpand),mode,bm_noexpand);
 	      case bm_expand of
-	        bm_ifeq_scb1_ne  : mode:=bm_ifeq_scb1;
-		bm_ifeq_scb2_ne  : mode:=bm_ifeq_scb2;
-		bm_ifneq_scb1_ne : mode:=bm_ifneq_scb1;
-		bm_ifneq_scb2_ne : mode:=bm_ifneq_scb2;
+	        bm_ifeq_scb1, bm_ifeq_scb2, bm_ifneq_scb1, bm_ifneq_scb2 : mode:=bm_expand;
 		else mode:=bm_plain;
 		end;
               end;
@@ -1561,19 +1534,19 @@ end;
 { ****** paramerr ***************************************************** }
 procedure paramerr(msg:ansistring);
 begin
-writeln(stderr,'Usage: '+paramstr(0)+' [<Options>] [<filename1> [<filename1> ...]]');
+writeln(stderr,'Usage: '+paramstr(0)+' [<Options>] [<filename1> [<filename2> ...]]');
 writeln(stderr,'Options: ');
 writeln(stderr,'	-o <fileneme>    Output file');
 writeln(stderr,'	-p  	         Pascal mode (default), equal to -mm "//" -mo "[" -mc "]" -mp "#"');
-writeln(stderr,'	-c               C mode, equal to -mm "#" -mo "[" -mc "]" -mp "$" -l "\"#line %2 "%1\""');
-writeln(stderr,'	-i               Ignore case');
-writeln(stderr,'        -l		 Line info (default for C mode: "#line %2 \"%1\"")');
+writeln(stderr,'	-c               C mode, equal to -mm "#" -mo "[" -mc "]" -mp "$" -l ''#line %2 "%1"''');
+writeln(stderr,'	-i               Ignore upper/lower case');
+writeln(stderr,'        -l		 Line info (default for C mode: ''#line %2 "%1"'')');
 writeln(stderr,'	-I  <directory>  Include path');
 writeln(stderr,'	-D  <symbol>     Define symbol <symbol>');
 writeln(stderr,'	-mm <string>     Meta macro start string');
 writeln(stderr,'	-mo <char>       Open bracket');
 writeln(stderr,'	-mc <char>       Close bracket');
-writeln(stderr,'	-mp <char>       Parameter sign');
+writeln(stderr,'	-mp <char>       Parameter character');
 //writeln(stderr,'	-nh              Disable hints');
 {$ifdef ENABLE_DEBUGOUT}    
 writeln(stderr,'	-do              Enable debug output');

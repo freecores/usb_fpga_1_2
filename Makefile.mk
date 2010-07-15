@@ -3,7 +3,7 @@
 # The following variables are used:
 #
 # ZTEXPREFIX
-#   Defines location if this firmware / driver kit.
+#   Defines the location of the EZ-USB SDK
 #   Must be defined!
 #   Example: ZTEXPREFIX=../../..
 #
@@ -28,10 +28,17 @@
 #   Example: IHXEXTRADEPS:=$(shell echo $(ZTEXPREFIX)/include/*.h)
 #
 # EXTRAJARFILES
-#   Extra files that should be included into th jar achieve
+#   Extra files that should be included into the jar archive
 #   Example: EXTRAJARFILES=ucecho.ihx fpga/ucecho.bin
 
-.PHONY: all ihx jar clean distclean
+# EXTRACLEANFILES
+#   Extra files that should be cleaned by target "clean"
+
+# EXTRADISTCLEANFILES
+#   Extra files that should be cleaned by target "distclean"
+
+
+.PHONY: all ihx jar clean distclean default
 
 JAVAC=javac
 SDCC=$(ZTEXPREFIX)/bin/bmpsdcc.sh
@@ -55,7 +62,9 @@ clean:
 	rm -f *~ *.bak *.old
 	rm -f *.class 
 	rm -f *.rel *.rst *.lnk *.lst *.map *.asm *.sym *.mem *.tmp.c 
+	rm -f $(EXTRACLEANFILES)
 
 distclean: clean
 	rm -f $(JARTARGET)
 	rm -f *.ihx
+	rm -f $(EXTRADISTCLEANFILES)

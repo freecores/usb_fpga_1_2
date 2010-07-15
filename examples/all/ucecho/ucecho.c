@@ -1,6 +1,6 @@
 /*!
-   ucecho -- example for ZTEX USB FPGA Module 1.2
-   Copyright (C) 2008-2009 ZTEX e.K.
+   ucecho -- uppercase conversion example for all EZ-USB devices
+   Copyright (C) 2009-2010 ZTEX e.K.
    http://www.ztex.de
 
    This program is free software; you can redistribute it and/or modify
@@ -19,14 +19,11 @@
 #include[ztex-conf.h]	// Loads the configuration macros, see ztex-conf.h for the available macros
 #include[ztex-utils.h]	// include basic functions
 
-// Cypress vendor ID and product ID may only (!) be used for experimental purposes
-SET_VPID(0x4b4,0x8613);		
-
 // define endpoints 2 and 4, both belong to interface 0 (in/out are from the point of view of the host)
 EP_CONFIG(2,0,BULK,IN,512,2);	 
 EP_CONFIG(4,0,BULK,OUT,512,2);	 
 
-// give them a nice name
+// this product string is also used for identification by the host software
 #define[PRODUCT_STRING]["ucecho for EZ-USB devices"]
 
 // include the main part of the firmware kit, define the descriptors, ...

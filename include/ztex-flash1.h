@@ -1,6 +1,6 @@
 /*!
    ZTEX Firmware Kit for EZ-USB Microcontrollers
-   Copyright (C) 2008-2009 ZTEX e.K.
+   Copyright (C) 2009-2010 ZTEX e.K.
    http://www.ztex.de
 
    This program is free software; you can redistribute it and/or modify
@@ -54,18 +54,29 @@
 #error[MMC_BIT_CLK not defined]
 #endif
 
+#ifndef[MMC__PORT_DO]
+#define[MMC__PORT_DO][MMC_PORT]
+#endif
+
+#ifdef[MMC_bmMODE]
+#ifneq[MMC__PORT_DO][MMC_PORT]
+#error[MMC__PORT_DO and MMC_PORT must be equal]
+#endif
+#endif
+
 #define[MMC_bmCS][bmBITMMC_BIT_CS]
 #define[MMC_bmDI][bmBITMMC_BIT_DI]
 #define[MMC_bmDO][bmBITMMC_BIT_DO]
 #define[MMC_bmCLK][bmBITMMC_BIT_CLK]
 
 #define[MMC_IO][IOMMC_PORT]
+#define[MMC__IO_DO][IOMMC__PORT_DO]
 
 #ifndef[MMC_bmMODE]
 #define[MMC_CS][IOMMC_PORTMMC_BIT_CS]
 #define[MMC_CLK][IOMMC_PORTMMC_BIT_CLK]
 #define[MMC_DI][IOMMC_PORTMMC_BIT_DI]
-#define[MMC_DO][IOMMC_PORTMMC_BIT_DO]
+#define[MMC_DO][IOMMC__PORT_DOMMC_BIT_DO]
 #endif
 
 // may be redefined if the first sectors are reserved (e.g. for a FPGA bitstream)
@@ -78,7 +89,8 @@ xdata BYTE flash_ec; 	        // 7	error code
 
 xdata BYTE mmc_last_cmd;	// 0
 xdata BYTE mmc_response;	// 1
-xdata BYTE mmc_buffer[16];	// 2
+xdata BYTE mmc_version;		// 2
+xdata BYTE mmc_buffer[16];	// 3
 
 #define[FLASH_EC_CMD_ERROR][1]
 #define[FLASH_EC_TIMEOUT][2]
@@ -86,6 +98,7 @@ xdata BYTE mmc_buffer[16];	// 2
 #define[FLASH_EC_PENDING][4]
 #define[FLASH_EC_READ_ERROR][5]
 #define[FLASH_EC_WRITE_ERROR][6]
+#define[FLASH_EC_NOTSUPPORTED][7]
 
 /* *********************************************************************
    ***** mmc_clocks ****************************************************
@@ -641,7 +654,7 @@ BYTE mmc_wait_busy () {
     flash_ec = FLASH_EC_BUSY;
     MMC_IO |= MMC_bmDI;				// avoids that in-data is interpreted as command
     for (i=0; (flash_read_byte()!=255) && i<65535; i++ ) ;
-    if ( MMC_IO & MMC_bmDO ) {
+    if ( MMC__IO_DO & MMC_bmDO ) {
 	flash_ec = 0;
 	return 0;
     }
@@ -731,13 +744,22 @@ BYTE flash_read_init(DWORD s) {
 	mmc_deselect();
 	return FLASH_EC_BUSY;
     }
+    mmc_clocks(8);				// 8 dummy clocks
     mmc_last_cmd = 17;
     mmc_buffer[0] = 17 | 64;
-    s = s << 1;
-    mmc_buffer[1] = s >> 16;
-    mmc_buffer[2] = s >> 8;
-    mmc_buffer[3] = s;
-    mmc_buffer[4] = 0;
+    if ( mmc_version == 0 ) {
+	s = s << 1;
+	mmc_buffer[1] = s >> 16;
+	mmc_buffer[2] = s >> 8;
+	mmc_buffer[3] = s;
+	mmc_buffer[4] = 0;
+    }
+    else {
+	mmc_buffer[1] = s >> 24;
+	mmc_buffer[2] = s >> 16;
+	mmc_buffer[3] = s >> 8;
+	mmc_buffer[4] = s;
+    }
     mmc_buffer[5] = 1;
     flash_write(mmc_buffer,6);
     mmc_read_response();
@@ -787,14 +809,22 @@ BYTE flash_write_init(DWORD s) {
 	mmc_deselect();
 	return FLASH_EC_BUSY;
     }
-    mmc_clocks(8);
+    mmc_clocks(8);				// 8 dummy clocks
     mmc_last_cmd = 24;
     mmc_buffer[0] = 24 | 64;
-    s = s << 1;
-    mmc_buffer[1] = s >> 16;
-    mmc_buffer[2] = s >> 8;
-    mmc_buffer[3] = s;
-    mmc_buffer[4] = 0;
+    if ( mmc_version == 0 ) {
+	s = s << 1;
+	mmc_buffer[1] = s >> 16;
+	mmc_buffer[2] = s >> 8;
+	mmc_buffer[3] = s;
+	mmc_buffer[4] = 0;
+    }
+    else {
+	mmc_buffer[1] = s >> 24;
+	mmc_buffer[2] = s >> 16;
+	mmc_buffer[3] = s >> 8;
+	mmc_buffer[4] = s;
+    }
     mmc_buffer[5] = 1;
     flash_write(mmc_buffer,6);
     mmc_read_response();
@@ -843,14 +873,15 @@ BYTE flash_write_finish(WORD n) {
    ***** mmc_send_cmd **************************************************
    ********************************************************************* */
 // send a command   
-#define[mmc_send_cmd(][,$1);][{			// send a command, argument=0
+#define[mmc_send_cmd(][,$1.$2.$3.$4,$5);][{			// send a command, argument=0
+    mmc_clocks(8);				// 8 dummy clocks
     mmc_last_cmd = $0;
     mmc_buffer[0] = 64 | ($0 & 127);
-    mmc_buffer[1] = 0;
-    mmc_buffer[2] = 0;
-    mmc_buffer[3] = 0;
-    mmc_buffer[4] = 0;
-    mmc_buffer[5] = $1 | 1;
+    mmc_buffer[1] = $1;
+    mmc_buffer[2] = $2;
+    mmc_buffer[3] = $3;
+    mmc_buffer[4] = $4;
+    mmc_buffer[5] = $5 | 1;
     flash_write(mmc_buffer,6);
     mmc_read_response();
 }]    
@@ -860,12 +891,15 @@ BYTE flash_write_finish(WORD n) {
    ********************************************************************* */
 // init the card
 void flash_init() {
-    BYTE i;
+    BYTE i, j, k;
 
     flash_enabled = 1;
     flash_sector_size = 512;
+    mmc_version = 0;
     
-    OEMMC_PORT = (OEMMC_PORT & ~MMC_bmDO) | ( MMC_bmCS | MMC_bmDI | MMC_bmCLK );
+    OEMMC_PORT = OEMMC_PORT | ( MMC_bmCS | MMC_bmDI | MMC_bmCLK );
+    OEMMC__PORT_DO = OEMMC__PORT_DO & ~MMC_bmDO;
+
     MMC_IO |= MMC_bmDI;
     MMC_IO |= MMC_bmCS;
     mmc_clocks(0);				// 256 clocks
@@ -873,30 +907,75 @@ void flash_init() {
     mmc_select();				// select te card
     flash_ec = FLASH_EC_BUSY;
 	
-    mmc_send_cmd(0, 0x95);			// send reset command
+    mmc_send_cmd(0, 0.0.0.0, 0x95);			// send reset command
     if ( mmc_response & ~1 ) {			// check for errors
 	goto mmc_init_cmd_err;
     }
-
+    
+    // send cmd8, valid ? 2.0 mode : 1.xx mode
+    mmc_send_cmd(8, 0.0.1.0xaa, 0x87);
+    if ( ( mmc_response & bmBIT2) == 0 ) {
+	if ( (mmc_response & 0xfe) != 0 )  
+	    goto mmc_init_cmd_err;
+	flash_read(mmc_buffer,4);
+	if ( ( (mmc_buffer[2] & 15) != 1) || (mmc_buffer[3] != 0xaa ) ) {
+	    flash_ec = FLASH_EC_NOTSUPPORTED;
+	    goto mmc_init_err;
+	}
+	mmc_version=1;
+    }
+    
+    // CMD1 is not recommended, therefore we try ACMD41 first
+    k=mmc_version ? 64 : 0;
+    mmc_send_cmd(55, 0.0.0.0, 0);
+    if ( (mmc_response & 0xfe) == 0 )
+	mmc_send_cmd(41, k.0.0.0, 0);
+    j = mmc_response & 0xfe;
+    
     for ( i=0; mmc_response != 0 && i<255; i++ ) {	// send the init command and wait wait (up to 1s) until ready
 	wait(4);
-	mmc_send_cmd(1, 0xff);
+	if ( j ) {
+	    mmc_send_cmd(1, k.0.0.0, 0xff);
+	}
+	else {
+	    mmc_send_cmd(55, 0.0.0.0, 0);
+	    mmc_send_cmd(41, k.0.0.0, 0);
+	}
     }
     if ( mmc_response != 0 ) {			// check for errors
 	goto mmc_init_cmd_err;
+    } 
+
+    if ( mmc_version ) {
+	mmc_send_cmd(58, 0.0.0.0, 0);  		// check the high capacity mode
+	if ( mmc_response != 0 ) 		// check for errors
+	    goto mmc_init_cmd_err;
+	flash_read(mmc_buffer,4);
+	if ( (mmc_buffer[0] & 64) == 0 )	// card in standard capacity mode
+	    mmc_version = 0;
     }
 
-    mmc_send_cmd(9, 0);				// read the CSD
+    mmc_send_cmd(9, 0.0.0.0, 0);		// read the CSD
     if ( mmc_wait_start() ) {
 	flash_ec = FLASH_EC_TIMEOUT;
 	goto mmc_init_err;
     }
     flash_read(mmc_buffer,16);
-    mmc_clocks(16);				// CRC is clocked out to nirvana
+    mmc_clocks(16);				// CRC is clocked out
 
-    i = (mmc_buffer[5] & 15) + ((mmc_buffer[10] >> 7) | ((mmc_buffer[9] & 3) << 1)) - 7;
-    flash_sectors = ((mmc_buffer[8] >> 6) | (mmc_buffer[7] << 2) | ((mmc_buffer[6] & 3) << 10)) + 1;
-    flash_sectors = flash_sectors << i;
+    mmc_buffer[0] &= 192;
+    if ( (mmc_buffer[0] & 192) == 0  ) {
+	i = (mmc_buffer[5] & 15) + ((mmc_buffer[10] >> 7) | ((mmc_buffer[9] & 3) << 1)) - 7;
+	flash_sectors = ((mmc_buffer[8] >> 6) | (mmc_buffer[7] << 2) | ((mmc_buffer[6] & 3) << 10)) + 1;
+	flash_sectors = flash_sectors << i;
+    }
+    else if ( (mmc_buffer[0] & 192) == 64  ) { // todo
+	flash_sectors = ( ( ((DWORD)(mmc_buffer[7] & 63) << 16) | (mmc_buffer[8] << 8) | mmc_buffer[9]  ) +1 ) << 10;
+    } 
+    else {
+	flash_ec = FLASH_EC_NOTSUPPORTED;
+	goto mmc_init_err;
+    }
 
     flash_ec = 0;
     mmc_deselect();
@@ -942,8 +1021,10 @@ ADD_EP0_VENDOR_REQUEST((0x41,,			// read (exactly) one sector
 	mmc_deselect();
 	EP0_STALL;
     }
+    mmc_clocks(8);				// 8 dummy clocks
     mmc_last_cmd = 17;
     mmc_buffer[0] = 17 | 64;
+    if ( mmc_version == 0 ) {
 _asm
     clr c
     mov	dptr,#(_SETUPDAT + 2)
@@ -964,7 +1045,14 @@ _asm
     rlc a
     movx @dptr,a
 _endasm;
-    mmc_buffer[4] = 0;
+	mmc_buffer[4] = 0;
+    }
+    else {
+	mmc_buffer[1] = SETUPDAT[5];
+	mmc_buffer[2] = SETUPDAT[4];
+	mmc_buffer[3] = SETUPDAT[3];
+	mmc_buffer[4] = SETUPDAT[2];
+    }
     mmc_buffer[5] = 1;
     flash_write(mmc_buffer,6);
     mmc_read_response();
@@ -1016,8 +1104,10 @@ ADD_EP0_VENDOR_COMMAND((0x42,,			// write (exactly!) one sector
 	mmc_deselect();
 	EP0_STALL;
     }
+    mmc_clocks(8);				// 8 dummy clocks
     mmc_last_cmd = 24;
     mmc_buffer[0] = 24 | 64;
+    if ( mmc_version == 0 ) {
 _asm
     clr c
     mov	dptr,#(_SETUPDAT + 2)
@@ -1038,7 +1128,15 @@ _asm
     rlc a
     movx @dptr,a
 _endasm;
-    mmc_buffer[4] = 0;
+	mmc_buffer[4] = 0;
+    }
+    else {
+	mmc_buffer[1] = SETUPDAT[5];
+	mmc_buffer[2] = SETUPDAT[4];
+	mmc_buffer[3] = SETUPDAT[3];
+	mmc_buffer[4] = SETUPDAT[2];
+    }
+
     mmc_buffer[5] = 1;
     flash_write(mmc_buffer,6);
     mmc_read_response();
@@ -1068,15 +1166,15 @@ _endasm;
    ********************************************************************* */
 // send detailed MMC status plus debug information
 ADD_EP0_VENDOR_REQUEST((0x43,,			// this may interrupt a pending operation
-    MEM_COPY1(flash_ec,EP0BUF+2,19);	
-    EP0BUF[21] = (MMC_IO & MMC_bmDO) == 0;
+    MEM_COPY1(flash_ec,EP0BUF+2,20);	
+    EP0BUF[22] = (MMC__IO_DO & MMC_bmDO) == 0;
     mmc_select();
-    mmc_send_cmd(13, 0);
+    mmc_send_cmd(13, 0.0.0.0, 0);
     EP0BUF[0] = mmc_response;
     EP0BUF[1] = flash_read_byte();
     mmc_deselect();
     EP0BCH = 0;
-    EP0BCL = 22;
+    EP0BCL = 23;
 ,,
 ));;
 

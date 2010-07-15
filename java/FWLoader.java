@@ -1,6 +1,6 @@
 /*!
    Firmware / Bitstream loader for the ZTEX Firmware Kit
-   Copyright (C) 2008-2009 ZTEX e.K.
+   Copyright (C) 2009-2010 ZTEX e.K.
    http://www.ztex.de
 
    This program is free software; you can redistribute it and/or modify
@@ -46,6 +46,7 @@ class FWLoader {
 			"Ordered parameters:\n"+
 			"    -i               Info\n"+
 			"    -ii              Info + capabilities\n"+
+			"    -if              Read FPGA state\n"+
 			"    -ru              Reset EZ-USB Microcontroller\n"+
 			"    -uu <ihx file>   Upload EZ-USB Firmware\n"+
 			"    -rf              Reset FPGA\n"+
@@ -59,7 +60,7 @@ class FWLoader {
 // process global parameters
 	try {
 
-	    int usbVendorId = -1;
+	    int usbVendorId = ZtexDevice1.ztexVendorId;
 	    int usbProductId = -1;
 	    boolean cypress = false;
 	    int devNum = 0;
@@ -96,8 +97,8 @@ class FWLoader {
 		    }
 		}
 		else if ( args[i].equals("-vc") ) {
-		    usbVendorId = 0x4b4;
-		    usbProductId = 0x8613;
+		    usbVendorId = ZtexDevice1.cypressVendorId;
+		    usbProductId = ZtexDevice1.cypressProductId;
 		}
 		else if ( args[i].equals("-f") ) {
 		    forceUpload = true;
@@ -125,7 +126,7 @@ class FWLoader {
 		        System.err.println(helpMsg);
 	    	        System.exit(0);
 		}
-		else if ( args[i].equals("-i") || args[i].equals("-ii") || args[i].equals("-ru") || args[i].equals("-rf") || args[i].equals("-re") || args[i].equals("-rm") ) {
+		else if ( args[i].equals("-i") || args[i].equals("-ii") || args[i].equals("-if") || args[i].equals("-ru") || args[i].equals("-rf") || args[i].equals("-re") || args[i].equals("-rm") ) {
 		}
 		else if ( args[i].equals("-uu") || args[i].equals("-uf") || args[i].equals("-ue") || args[i].equals("-um") ) {
 		    i+=1;
@@ -162,6 +163,9 @@ class FWLoader {
 		    else {
 			System.out.println( "   Capabilities:\n      "+str);
 		    }
+		} 
+		if ( args[i].equals("-if") ) {
+		    ztex.printFpgaState();
 		} 
 		else if ( args[i].equals("-ru") ) {
 		    ztex.resetEzUsb();

@@ -1,6 +1,6 @@
 /*!
    ZTEX Firmware Kit for EZ-USB Microcontrollers
-   Copyright (C) 2008-2009 ZTEX e.K.
+   Copyright (C) 2009-2010 ZTEX e.K.
    http://www.ztex.de
 
    This program is free software; you can redistribute it and/or modify

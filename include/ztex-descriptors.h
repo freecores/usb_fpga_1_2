@@ -1,6 +1,6 @@
 /*!
    ZTEX Firmware Kit for EZ-USB Microcontrollers
-   Copyright (C) 2008-2009 ZTEX e.K.
+   Copyright (C) 2009-2010 ZTEX e.K.
    http://www.ztex.de
 
    This program is free software; you can redistribute it and/or modify
@@ -49,6 +49,7 @@ xdata at ZTEX_DESCRIPTOR_OFFS+2 BYTE ZTEXID[4];
    1.*.*.*   		// may be used for experimental purposes
    10.*.*.*		// used for ZTEX products
    10.11.*.*		// ZTEX USB-FPGA-Module 1.2
+   10.12.*.*		// ZTEX USB-FPGA-Module 1.10
    10.20.*.*		// ZTEX USB-Module 1.0
    
    Please contact me (http://www.ztex.de --> Impressum/Kontakt) if you want to register/reserve a Product ID (range).
@@ -81,11 +82,11 @@ xdata at ZTEX_DESCRIPTOR_OFFS+30 BYTE SN_STRING[10];
 
 /* Are Vendor ID and Product ID defined? */
 #ifndef[USB_VENDOR_ID]
-#error[No USB Vendor ID defined (you may use the Cypress Vendor ID 0x04b4 (only !) for development purposes)]
+#error[No USB Vendor ID defined]
 #endif
 
 #ifndef[USB_PRODUCT_ID]
-#error[No USB Product ID defined (you may use the FX2 Product ID 0x8613 from Cypress (only !) during the development process)]
+#error[No USB Product ID defined]
 #endif
 
 /* Prepare the Interfaces, i.e. check which interfaces are defined */
@@ -213,22 +214,22 @@ code char configurationString[] = CONFIGURATION_STRING;
 #else
 #error[Invalid type for endpoint $0: `EP$0_TYPE' (`ISO', 'BULK' or `INT' expected)]
 #endif 
-#ifeq[EP$0_SIZE][64]		// to avoid stupid warnings
-	,64			// 4, max. packet size (L) 
-	,0		 	// 5, max. packet size (H) 
-#else
 #ifdef[HIGH_SPEED]
 	,EP$0_SIZE & 0xff 	// 4, max. packet size (L) 
 	,EP$0_SIZE >> 8 	// 5, max. packet size (H) 
+#ifneq[EP$0_TYPE][BULK]
+	    | ( (EP$0_PPMF-1) << 3 )
+#endif
 #else
 	,64			// 4, max. packet size (L) 
 	,0 			// 5, max. packet size (H) 
 #endif	
-#endif
-#ifeq[EP$0_TYPE][ISO]
-	,1 			// 6, Polling interval
-#else
+#ifeq[EP$0_TYPE][BULK]
 	,0 			// 6, Polling interval
+#elifeq[EP$0_TYPE][ISO]
+	,1 			// 6, Polling interval (1ms if Full Speed mode, 125µs in High Speed Mode)
+#else
+	,EP$0_POLL 		// 6, Polling interval (1ms if Full Speed mode, 125µs in High Speed Mode)
 #endif	
 ]
    
@@ -252,7 +253,7 @@ code char configurationString[] = CONFIGURATION_STRING;
 #endif
 #endif
 #endif
-	,0	// 3, Alternate setting	
+	,0	// 3, Alternate setting	0
 	,0	// 4, Number of end points 
 #ifeq[EP1IN_INTERFACE][$0]
 	  +1
@@ -384,8 +385,8 @@ code BYTE FullSpeedConfigDescriptor[] =
     {   
 	9 	// 0, Descriptor length
 	,0x02	// 1, Decriptor type
-	,sizeof(HighSpeedConfigDescriptor) & 0xff	// 2, Total length (LSB)
-//	,sizeof(HighSpeedConfigDescriptor) >> 8		// 3, Total length (MSB)
+	,sizeof(FullSpeedConfigDescriptor) & 0xff	// 2, Total length (LSB)
+//	,sizeof(FullSpeedConfigDescriptor) >> 8		// 3, Total length (MSB)
 	,0						// 3, To avoid warnings, descriptor length will never exceed 255 bytes
 	,0	// 4, Number of Interfaces
 #ifdef[CONFIG_INTERFACE0]

@@ -1,6 +1,6 @@
 /*!
-   ucecho -- example for ZTEX USB FPGA Module 1.2
-   Copyright (C) 2008-2009 ZTEX e.K.
+   ucecho -- uppercase conversion example for ZTEX USB FPGA Module 1.2
+   Copyright (C) 2009-2010 ZTEX e.K.
    http://www.ztex.de
 
    This program is free software; you can redistribute it and/or modify
@@ -52,21 +52,6 @@ class UCEcho extends Ztex1v1 {
 	super ( pDev );
     }
 
-// ******* claimInterface ******************************************************
-// claims interface 0
-    public void claimInterface ( ) throws UsbException{
-	if ( LibusbJava.usb_set_configuration(handle(), 1) < 0 )
-	    throw new UsbException("Setting configuration to 1 failed: " + LibusbJava.usb_strerror());
-	if ( LibusbJava.usb_claim_interface(handle(), 0) < 0 )
-	    throw new UsbException("Claiming interface 0 failed: " + LibusbJava.usb_strerror());
-    }
-
-// ******* releaseInterface ****************************************************
-// releases interface 0
-    public void releaseInterface ( ) {
-	LibusbJava.usb_release_interface(handle(), 0);
-    }
-    
 // ******* echo ****************************************************************
 // writes a string to Endpoint 4, reads it back from Endpoint 2 and writes the output to System.out
     public void echo ( String input ) throws UsbException {
@@ -101,7 +86,7 @@ class UCEcho extends Ztex1v1 {
 	    LibusbJava.usb_init();
 
 // scan the USB bus
-	    ZtexScanBus1 bus = new ZtexScanBus1( ZtexDevice1.cypressVendorId, ZtexDevice1.cypressProductId, true, false, 1);
+	    ZtexScanBus1 bus = new ZtexScanBus1( ZtexDevice1.ztexVendorId, ZtexDevice1.ztexProductId, true, false, 1);
 	    if ( bus.numberOfDevices() <= 0) {
 		System.err.println("No devices found");
 	        System.exit(0);
@@ -146,7 +131,7 @@ class UCEcho extends Ztex1v1 {
 	    ztex.certainWorkarounds = workarounds;
 	    
 // upload the firmware if necessary
-	    if ( force || ! ztex.valid() || ! ztex.dev().productString().equals("ucecho for USB FPGA MODULE 1.2")  ) {
+	    if ( force || ! ztex.valid() || ! ztex.dev().productString().equals("ucecho example for UFM 1.2")  ) {
 		System.out.println("Firmware upload time: " + ztex.uploadFirmware( "ucecho.ihx", force ) + " ms");
 	    }
 	    
@@ -157,7 +142,8 @@ class UCEcho extends Ztex1v1 {
 
 
 // claim interface 0
-	    ztex.claimInterface();
+	    ztex.trySetConfiguration ( 1 );
+	    ztex.claimInterface ( 0 );
 	    
 // read string from stdin and write it to USB device
 	    String str = "";
@@ -171,7 +157,7 @@ class UCEcho extends Ztex1v1 {
 	    }
 	    
 // release interface 0
-	    ztex.releaseInterface();	
+	    ztex.releaseInterface( 0 );	
 	    
 	}
 	catch (Exception e) {

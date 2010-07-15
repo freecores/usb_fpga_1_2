@@ -29,7 +29,8 @@ LIBSRCS=LibusbJava.c
 LIBEXTRADEPS=LibusbJava.h
 JAVASRCS=$(shell echo ch/ntb/usb/*.java) $(shell echo ch/ntb/usb/logger/*.java)
 
-LIBTARGET=libusbJava.so
+LIBTARGET_SH=libusbJavaSh.so
+LIBTARGET_ST=libusbJavaSt.so
 LIBLIBS=-lusb
 LIBINCS=-I $(JAVAPREFIX)/include -I $(JAVAPREFIX)/include/linux
 
@@ -39,10 +40,13 @@ all: libs classes
 
 classes: classes.made
 
-libs: $(LIBTARGET)
+libs: $(LIBTARGET_SH) $(LIBTARGET_ST)
 
-$(LIBTARGET): $(LIBSRCS) $(LIBEXTRADEPS)
-	$(GCC) -shared -std=c99 -Wall -Wl,-static,-soname,$(LIBTARGET) $(LIBINCS) -static $(LIBSRCS) -o $(LIBTARGET) $(LIBLIBS)
+$(LIBTARGET_ST): $(LIBSRCS) $(LIBEXTRADEPS)
+	$(GCC) -shared -std=c99 -Wall -Wl,-static,-soname,$(LIBTARGET_ST) $(LIBINCS) -static $(LIBSRCS) -o $(LIBTARGET_ST) $(LIBLIBS)
+
+$(LIBTARGET_SH): $(LIBSRCS) $(LIBEXTRADEPS)
+	$(GCC) -shared -std=c99 -Wall -Wl,-soname,$(LIBTARGET_SH) $(LIBINCS) $(LIBSRCS) -o $(LIBTARGET_SH) $(LIBLIBS)
 
 classes.made: $(JAVASRCS)
 	$(JAVAC) $(JAVASRCS)
@@ -53,7 +57,8 @@ doc:
 	
 install2: all
 	$(INSTALLDIR) ../libusbJava/ch/ntb/usb/logger
-	$(INSTALLFILE) $(LIBTARGET) ../libusbJava
+	$(INSTALLFILE) $(LIBTARGET_SH) ../libusbJava
+	$(INSTALLFILE) $(LIBTARGET_ST) ../libusbJava
 	$(INSTALLFILE) ch/ntb/usb/*.class ../libusbJava/ch/ntb/usb
 	$(INSTALLFILE) ch/ntb/usb/logger/*.class ../libusbJava/ch/ntb/usb/logger
 
@@ -61,4 +66,4 @@ clean:
 	$(RM) *.o
 
 distclean:
-	$(RM) $(LIBTARGET) ch/ntb/usb/*.class ch/ntb/usb/logger/*.class classes.made
+	$(RM) $(LIBTARGET_SH) $(LIBTARGET_ST) ch/ntb/usb/*.class ch/ntb/usb/logger/*.class classes.made

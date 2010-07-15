@@ -363,7 +363,14 @@ public class LibusbJava {
 		if (os.contains("Windows")) {
 	    	    LibLoader.load( "libusbJava" );
 		} else {
-	    	    LibLoader.load( "usbJava" );
+		    try {
+	    		LibLoader.load( "usbJavaSh" );
+//	    		System.err.println("loaded libusbJavaSh");
+	    	    }
+	    	    catch ( UnsatisfiedLinkError e ) {
+	    		LibLoader.load( "usbJavaSt" );
+//	    		System.err.println("loaded libusbJavaSt");
+	    	    }
 		}
 		// define the error codes
 		ERROR_SUCCESS = 0;
